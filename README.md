@@ -1,2 +1,84 @@
 # KampBase
-T-Bank hackatone 2026 
+
+## Начало работы
+
+1.  **Клонируйте репозиторий:**
+
+    ```bash
+    git clone [ваш-url-репозитория]
+    cd KampBase
+    ```
+
+2.  **Настройте переменные окружения:**
+    Создайте файл `.env` в корне проекта. Этот файл будет использоваться `docker-compose` для установки переменных окружения для сервисов.
+    Пример файла `.env` (или просто скопируйте содержимое ниже):
+
+    ```
+    # Конфигурация MariaDB
+    MARIADB_ROOT_PASSWORD=rootpassword
+    MARIADB_DATABASE=kampbase
+    MARIADB_USER=user
+    MARIADB_PASSWORD=password
+
+    # Конфигурация источника данных Spring Boot
+    SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/kampbase
+    SPRING_DATASOURCE_USERNAME=user
+    SPRING_DATASOURCE_PASSWORD=password
+
+    # URL API для фронтенда (используется во время сборки и для локальной разработки)
+    # Это будет передано как аргумент сборки в Dockerfile фронтенда.
+    # Значение по умолчанию — http://backend:8080 при работе в docker-compose.
+    # Если фронтенд запускается отдельно (без docker compose), вы можете установить его в http://localhost:8080, если бэкенд также работает локально.
+    FRONTEND_API_URL=http://backend:8080
+    ```
+
+3.  **Сборка и запуск с Docker Compose:**
+
+    ```bash
+    docker compose up --build
+    ```
+
+    Эта команда выполнит следующее:
+    - Соберет образы Docker для сервисов `backend` (Spring Boot) и `frontend` (Next.js).
+    - Запустит сервис базы данных `mariadb`.
+    - Запустит сервис `backend`, подключившись к MariaDB.
+    - Запустит сервис `frontend`.
+    - Запустит прокси-сервер `nginx`, который будет маршрутизировать запросы к фронтенду и бэкенду.
+
+4.  **Доступ к приложению:**
+    Как только все сервисы будут запущены, вы сможете получить доступ к приложению через Nginx:
+    - Фронтенд: `http://localhost/`
+    - API бэкенда (пример): `http://localhost/api/hello`
+
+## Структура проекта
+
+- `backend/`: Приложение Spring Boot
+- `frontend/`: Приложение Next.js
+- `maria_db/`: Каталог для постоянных данных MariaDB
+- `nginx/`: Конфигурация Nginx
+- `docker-compose.yml`: Конфигурация Docker Compose для всех сервисов
+- `.env`: Переменные окружения для Docker Compose
+- `.gitignore`: Файл игнорирования Git
+
+## Заметки по разработке
+
+### Бэкенд (Spring Boot)
+
+- **Версия Java:** 21
+- **Зависимости:** Spring Web, Spring Data JPA, MariaDB JDBC Driver
+- **Подключение к базе данных:** Настроено через переменные окружения (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`).
+
+### Фронтенд (Next.js)
+
+- (В настоящее время заглушка. Будет реализовано разработчиком.)
+- Ожидается, что запросы к API будут маршрутизироваться через Nginx. Например, `fetch('/api/some-endpoint')`.
+
+### Nginx
+
+- Проксирует запросы к `frontend` по умолчанию.
+- Запросы к `/api/` проксируются к сервису `backend`.
+
+### MariaDB
+
+- Данные сохраняются в томе `maria_db/data`.
+- Учетные данные устанавливаются через переменные окружения в файле `.env`.
