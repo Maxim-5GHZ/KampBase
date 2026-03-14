@@ -2,9 +2,10 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>9. Интерфейс: База Знаний</title>
+    <title>9.1 Дерево навыков</title>
     <link rel="stylesheet" href="style.css" />
     <style>
+      /* Тот же стиль, что и в slide9.html */
       .ui-showcase {
         display: flex;
         flex-direction: column;
@@ -18,7 +19,6 @@
         display: flex;
         justify-content: center;
         margin-bottom: 25px;
-        position: relative;
       }
       .ui-image-container img {
         max-width: 100%;
@@ -43,48 +43,47 @@
         text-align: left;
       }
       .ui-feature-card h4 {
-        color: var(--accent-blue);
+        color: var(--accent-gold);
         margin: 0 0 10px 0;
         font-size: 1.1rem;
       }
       .ui-feature-card p {
         margin: 0;
         font-size: 0.95rem;
-        color: var(--text-main);
       }
     </style>
   </head>
   <body>
     <div class="presentation-container">
       <div class="slide">
-        <h1>9. Дизайн UI: СтудБаза Wiki</h1>
+        <h1>9.1 Дизайн UI: Профиль и Дерево Навыков</h1>
 
         <div class="ui-showcase">
           <div class="ui-image-container">
-            <!-- Вставьте сюда картинку Wiki (image_5.jpg) -->
-            <img src="wiki.png" alt="Интерфейс Wiki" />
+            <!-- Вставьте сюда картинку Дерева навыков (image_4.png) -->
+            <img src="student-profile.png" alt="Дерево навыков" />
           </div>
 
           <div class="ui-features">
             <div class="ui-feature-card">
-              <h4><span class="accent">Современный Dark Mode</span></h4>
+              <h4><span class="accent">Геймификация (RPG)</span></h4>
               <p>
-                Чистый и не перегруженный дизайн, снижающий нагрузку на глаза
-                при долгом чтении статей.
+                Превращение скучной зачетки в интерактивное дерево прогрессии,
+                как в популярных играх.
               </p>
             </div>
             <div class="ui-feature-card">
-              <h4><span class="accent">Карточная система</span></h4>
+              <h4><span class="accent">Наглядный прогресс</span></h4>
               <p>
-                Удобная навигация с визуальными превью, тегами и примерным
-                временем на чтение материала.
+                Очки навыков, уровни (LVL) и полоса опыта (XP) формируют
+                психологическую привязанность к платформе.
               </p>
             </div>
             <div class="ui-feature-card">
-              <h4><span class="accent">Социальный рейтинг</span></h4>
+              <h4><span class="accent">Достижения (Ачивки)</span></h4>
               <p>
-                Система лайков (звезд), которая сразу показывает ценность и
-                актуальность контента для комьюнити.
+                Бейджи за выполнение особых задач, которые формируют уникальное
+                портфолио студента для работодателя.
               </p>
             </div>
           </div>
@@ -92,8 +91,8 @@
       </div>
 
       <div class="navigation">
-        <a href="slide8.html" class="nav-btn">◀ Назад</a>
-        <a href="slide9a.html" class="nav-btn">Вперед ▶</a>
+        <a href="slide9.html" class="nav-btn">◀ Назад</a>
+        <a href="slide9b.html" class="nav-btn">Вперед ▶</a>
       </div>
     </div>
   </body>

@@ -53,9 +53,14 @@ h3 {
   color: var(--text-main);
 }
 
-ul,
-ol {
-  font-size: 1.3em;
+ul {
+  padding-left: 20px;
+  margin: 0;
+}
+
+li {
+  margin-bottom: 10px;
+  font-size: 1.2rem;
   line-height: 1.6;
   text-align: left;
 }
@@ -222,6 +227,7 @@ code {
 .carousel-slide {
   min-width: 100%;
   box-sizing: border-box;
+  min-height: 400px;
 }
 
 .carousel-button {
