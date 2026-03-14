@@ -29,62 +29,33 @@
           "Segoe UI",
           sans-serif;
         background-color: var(--bg-color);
+        background-image: radial-gradient(
+          circle at 50% 0%,
+          rgba(36, 150, 237, 0.05) 0%,
+          transparent 50%
+        );
         color: var(--text-main);
         margin: 0;
         padding: 40px 20px;
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
         min-height: 100vh;
+        overflow-x: hidden;
       }
-      .navigation {
-      position: absolute;
-      bottom: 30px;
-      left: -200px;
-      right: -200px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .start_navigation {
-      position: absolute;
-      bottom: 100px;
-      left: 100px;
-      right: 100px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .nav-btn {
-      text-decoration: none;
-      color: #58a6ff;
-      font-family: "Fira Code", monospace;
-      font-weight: bold;
-      border: 1px solid #30363d;
-      padding: 10px 20px;
-      border-radius: 8px;
-      background: #0d1117;
-      transition: all 0.3s ease;
-    }
-
-    .nav-btn:hover {
-      background: #58a6ff;
-      color: #0d1117;
-      box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
-    }
-
-    .nav-btn.disabled {
-      visibility: hidden;
-    }
-
 
       .container {
         width: 100%;
         max-width: 1100px;
+        position: relative;
+        z-index: 1;
       }
 
+      /* ЗАГОЛОВОК */
       .header {
         text-align: center;
-        margin-bottom: 40px;
+        margin-bottom: 50px;
       }
 
       .header h1 {
@@ -92,55 +63,77 @@
         color: #ffffff;
         margin-bottom: 10px;
         letter-spacing: -0.5px;
-      }
-
-      .header p {
-        font-size: 1.2rem;
-        color: var(--color-docker);
-        font-family: monospace;
+        text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
       }
 
       /* DOCKER BOUNDARY */
+      @keyframes borderPulse {
+        0% {
+          border-color: rgba(36, 150, 237, 0.3);
+          box-shadow: inset 0 0 0 rgba(36, 150, 237, 0);
+        }
+        50% {
+          border-color: rgba(36, 150, 237, 0.8);
+          box-shadow: inset 0 0 20px rgba(36, 150, 237, 0.05);
+        }
+        100% {
+          border-color: rgba(36, 150, 237, 0.3);
+          box-shadow: inset 0 0 0 rgba(36, 150, 237, 0);
+        }
+      }
+
       .docker-boundary {
         border: 2px dashed var(--color-docker);
         border-radius: 16px;
-        padding: 40px;
+        padding: 50px 40px 40px;
         position: relative;
-        background: rgba(36, 150, 237, 0.03);
+        background: rgba(13, 17, 23, 0.6);
+        backdrop-filter: blur(10px);
+        animation: borderPulse 4s infinite ease-in-out;
       }
 
       .docker-label {
         position: absolute;
-        top: -15px;
+        top: -16px;
         left: 30px;
         background-color: var(--bg-color);
         color: var(--color-docker);
-        padding: 0 15px;
+        padding: 0 20px;
         font-weight: bold;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         display: flex;
         align-items: center;
         gap: 8px;
+        border: 1px solid rgba(36, 150, 237, 0.3);
+        border-radius: 20px;
+        box-shadow: 0 0 10px rgba(36, 150, 237, 0.1);
       }
 
-      /* CLIENT LAYER */
+      /* КЛИЕНТСКИЙ СЛОЙ */
       .client-layer {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
       }
 
       .node-client {
         display: inline-block;
-        background: var(--card-bg);
+        background: linear-gradient(145deg, #1f242c, var(--card-bg));
         border: 1px solid var(--border-color);
-        padding: 12px 30px;
+        padding: 14px 35px;
         border-radius: 30px;
-        font-weight: bold;
+        font-weight: 600;
         color: #fff;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+        transition: transform 0.3s ease;
       }
 
-      /* ARROWS */
+      .node-client:hover {
+        transform: translateY(-3px);
+        border-color: #58a6ff;
+        box-shadow: 0 8px 25px rgba(88, 166, 255, 0.15);
+      }
+
+      /* СТРЕЛКИ */
       @keyframes bounce {
         0%,
         20%,
@@ -159,69 +152,93 @@
 
       .arrow-container {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         margin: 15px 0;
-        gap: 12px;
+        gap: 5px;
       }
 
       .arrow-container svg {
-        width: 32px;
-        height: 32px;
-        stroke: var(--color-docker);
+        width: 28px;
+        height: 28px;
+        stroke: var(--text-muted);
         animation: bounce 2.5s infinite ease-in-out;
       }
 
       .arrow-container span {
-        font-size: 1rem;
+        font-size: 0.85rem;
         color: var(--text-muted);
-        font-family: monospace;
+        font-family: "Fira Code", monospace;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 2px 8px;
+        border-radius: 10px;
       }
 
-      /* NGINX LAYER */
+      /* КАРТОЧКИ УЗЛОВ */
       .proxy-layer {
         display: flex;
         justify-content: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
       }
 
       .node {
-        background: var(--card-bg);
+        background: linear-gradient(
+          180deg,
+          rgba(22, 27, 34, 1) 0%,
+          rgba(13, 17, 23, 1) 100%
+        );
         border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
-        width: 320px;
+        border-radius: 14px;
+        padding: 25px;
         text-align: center;
         position: relative;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-        transition:
-          transform 0.3s,
-          border-color 0.3s;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
 
       .node:hover {
-        transform: translateY(-5px);
+        transform: translateY(-8px);
       }
 
+      /* Индивидуальные стили и свечения */
       .node-nginx {
+        width: 350px;
         border-top: 4px solid var(--color-nginx);
       }
+      .node-nginx:hover {
+        box-shadow: 0 12px 30px rgba(0, 150, 57, 0.15);
+        border-color: var(--color-nginx);
+      }
+
       .node-next {
         border-top: 4px solid var(--color-nextjs);
-        width: 45%;
+        height: 90%;
       }
+      .node-next:hover {
+        box-shadow: 0 12px 30px rgba(255, 255, 255, 0.1);
+        border-color: var(--color-nextjs);
+      }
+
       .node-spring {
         border-top: 4px solid var(--color-spring);
-        width: 45%;
       }
+      .node-spring:hover {
+        box-shadow: 0 12px 30px rgba(109, 179, 63, 0.15);
+        border-color: var(--color-spring);
+      }
+
       .node-db {
-        border-top: 10px solid var(--color-mariadb-accent);
-        margin: 0 auto;
-        width: 45%;
+        border-top: 4px solid var(--color-mariadb-accent);
+        margin-top: 15px;
+      }
+      .node-db:hover {
+        box-shadow: 0 12px 30px rgba(192, 139, 92, 0.15);
+        border-color: var(--color-mariadb-accent);
       }
 
       .node h3 {
-        margin: 0 0 10px 0;
+        margin: 0 0 12px 0;
         color: #fff;
         font-size: 1.4rem;
         display: flex;
@@ -233,72 +250,98 @@
       .node p {
         font-size: 0.9rem;
         color: var(--text-muted);
-        margin: 0 0 15px 0;
-        line-height: 1.4;
+        margin: 0 0 20px 0;
+        line-height: 1.5;
       }
 
       .tech-tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 8px;
         justify-content: center;
       }
 
       .tag {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border-color);
-        padding: 4px 8px;
-        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 5px 10px;
+        border-radius: 6px;
         font-size: 0.75rem;
-        font-family: monospace;
+        font-family: "Fira Code", monospace;
         color: var(--text-main);
+        transition: all 0.2s;
       }
 
-      /* APP LAYER (SPLIT) */
+      .node:hover .tag {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* СЛОЙ ПРИЛОЖЕНИЯ (Разделение на 2 колонки) */
       .app-layer {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 30px;
-        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin-top: 10px;
       }
 
-      /* ROUTING LINES */
       .routing-lines {
         display: flex;
-        justify-content: space-between;
-        width: 50%;
-        margin: 0 auto 15px auto;
+        justify-content: space-around;
+        width: 100%;
+        margin: 0 auto 10px auto;
         color: var(--text-muted);
         font-size: 0.9rem;
-        font-family: monospace;
+        font-family: "Fira Code", monospace;
       }
 
-      /* DB LAYER */
-      .db-layer {
+      .routing-item {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        padding: 4px 12px;
+        border-radius: 12px;
+      }
+
+      /* НАВИГАЦИЯ */
+      .navigation {
         display: flex;
-        flex-direction: column;
-        align-items: flex-end; /* Align DB under Spring Boot */
-        padding-right: 2.5%; /* Adjust to perfectly center under the backend box */
+        justify-content: space-between;
+        width: 100%;
+        max-width: 1100px;
+        margin-top: 40px;
       }
 
-      @media (max-width: 768px) {
+      .nav-btn {
+        text-decoration: none;
+        color: #58a6ff;
+        font-family: "Fira Code", monospace;
+        font-weight: bold;
+        border: 1px solid #30363d;
+        padding: 12px 24px;
+        border-radius: 8px;
+        background: rgba(13, 17, 23, 0.8);
+        transition: all 0.3s ease;
+      }
+
+      .nav-btn:hover {
+        background: #58a6ff;
+        color: #0d1117;
+        box-shadow: 0 0 20px rgba(88, 166, 255, 0.4);
+        transform: scale(1.05);
+      }
+
+      @media (max-width: 850px) {
         .app-layer {
-          flex-direction: column;
-          gap: 30px;
-          align-items: center;
-        }
-        .node-next,
-        .node-spring {
-          width: 100%;
-          max-width: 320px;
-        }
-        .db-layer {
-          align-items: center;
-          padding-right: 0;
+          grid-template-columns: 1fr;
         }
         .routing-lines {
           display: none;
+        }
+        .node-nginx {
+          width: 100%;
+        }
+        .navigation {
+          padding: 0 20px;
+          box-sizing: border-box;
         }
       }
     </style>
@@ -314,15 +357,12 @@
         <div class="arrow-container">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="feather feather-arrow-down"
           >
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <polyline points="19 12 12 19 5 12"></polyline>
@@ -334,7 +374,6 @@
       <div class="docker-boundary">
         <div class="docker-label">🐳 Docker Network: studbaza-net</div>
 
-        <!-- REVERSE PROXY -->
         <div class="proxy-layer">
           <div class="node node-nginx">
             <h3 style="color: var(--color-nginx)">Nginx</h3>
@@ -351,83 +390,77 @@
         </div>
 
         <div class="routing-lines">
-          <span>↙ Route: / </span>
-          <span>Route: /api/* ↘</span>
+          <span class="routing-item">↙ Route: /</span>
+          <span class="routing-item">Route: /api/* ↘</span>
         </div>
 
-        <!-- APPLICATION LAYER -->
         <div class="app-layer">
-          <!-- FRONTEND -->
-          <div class="node node-next">
-            <h3 style="color: var(--color-nextjs)">Next.js</h3>
-            <p>
-              Frontend-сервер. Рендеринг пользовательского интерфейса,
-              интерактивные дашборды, клиентский роутинг.
-            </p>
-            <div class="tech-tags">
-              <span class="tag">React</span>
-              <span class="tag">TypeScript</span>
-              <span class="tag">Tailwind CSS</span>
-              <span class="tag">SPA App</span>
+          <div class="frontend-col">
+            <div class="node node-next">
+              <h3 style="color: var(--color-nextjs)">Next.js</h3>
+              <p>
+                Frontend-сервер. Рендеринг пользовательского интерфейса,
+                интерактивные дашборды, клиентский роутинг.
+              </p>
+              <div class="tech-tags">
+                <span class="tag">React</span>
+                <span class="tag">TypeScript</span>
+                <span class="tag">Tailwind CSS</span>
+                <span class="tag">SPA App</span>
+              </div>
             </div>
           </div>
 
-          <!-- BACKEND -->
-          <div class="node node-spring">
-            <h3 style="color: var(--color-spring)">Java Spring Boot 3</h3>
-            <p>
-              Ядро бизнес-логики. Обработка задач, код-ревью менторов, генерация
-              лидерборда и умный поиск по Wiki.
-            </p>
-            <div class="tech-tags">
-              <span class="tag">REST API</span>
-              <span class="tag">Axiom JDK 21+</span>
-              <span class="tag">Spring Security / JWT</span>
-        <div
-          class="arrow-container"
-          style="padding-right: 2.5%; margin-top: 15px"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="feather feather-arrow-down"
-          >
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <polyline points="19 12 12 19 5 12"></polyline>
-          </svg>
-          <span>TCP / 3306</span>
-        </div>
+          <div class="backend-col">
+            <div class="node node-spring">
+              <h3 style="color: var(--color-spring)">Java Spring Boot 3</h3>
+              <p>
+                Ядро бизнес-логики. Обработка задач, код-ревью менторов,
+                генерация лидерборда и умный поиск по Wiki.
+              </p>
+              <div class="tech-tags">
+                <span class="tag">REST API</span>
+                <span class="tag">Axiom JDK 21+</span>
+                <span class="tag">Spring Security / JWT</span>
+              </div>
+            </div>
 
-        <!-- DATABASE LAYER -->
-  
+            <div class="arrow-container">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <polyline points="19 12 12 19 5 12"></polyline>
+              </svg>
+              <span>TCP / 3306</span>
+            </div>
+
+            <div class="node node-db">
+              <h3 style="color: var(--color-mariadb-accent)">MariaDB</h3>
+              <p>
+                Надежное хранилище. Строгие ACID-транзакции для безопасного
+                начисления очков опыта и репутации.
+              </p>
+              <div class="tech-tags">
+                <span class="tag">Relational DB</span>
+                <span class="tag">Users Auth Data</span>
+                <span class="tag">Skills & XP</span>
+                <span class="tag">Wiki Storage</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-       <div class="db-layer">
-          <div class="node node-db">
-            <h3 style="color: var(--color-mariadb-accent)">MariaDB</h3>
-            <p>
-              Надежное хранилище. Строгие ACID-транзакции для безопасного
-              начисления очков опыта и репутации.
-            </p>
-            <div class="tech-tags">
-              <span class="tag">Relational DB</span>
-              <span class="tag">Users Auth Data</span>
-              <span class="tag">Skills & XP Tables</span>
-              <span class="tag">Wiki Markdown Storage</span>
-            </div>
-          </div>
-        </div>
-        
-    </div>
-    <div class="navigation">
+      <div class="navigation">
         <a href="slide9d.html" class="nav-btn">◀ Назад</a>
         <a href="slide11.html" class="nav-btn">Вперед ▶</a>
       </div>
+    </div>
   </body>
 </html>
