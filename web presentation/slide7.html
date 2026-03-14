@@ -2,48 +2,447 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>Слайд 7: Дизайн и UX</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>СтудБаза — Customer Journey Map (CJM)</title>
+    <style>
+      :root {
+        --bg-color: #0d1117;
+        --card-bg: #161b22;
+        --border-color: #30363d;
+        --text-main: #c9d1d9;
+        --text-muted: #8b949e;
+        --accent-gold: #e3b341;
+        --accent-blue: #58a6ff;
+        --accent-green: #3fb950;
+        --accent-purple: #bc8cff;
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        margin: 0;
+        padding: 40px 20px;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 50px;
+      }
+
+      .header h1 {
+        font-size: 2.8rem;
+        color: #ffffff;
+        margin-bottom: 10px;
+      }
+
+      .header p {
+        font-size: 1.2rem;
+        color: var(--accent-blue);
+      }
+
+      /* TIMELINE СТИЛИ */
+      .timeline {
+        position: relative;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      /* Центральная линия */
+      .timeline::after {
+        content: "";
+        position: absolute;
+        width: 4px;
+        background: linear-gradient(
+          to bottom,
+          var(--accent-blue),
+          var(--accent-purple),
+          var(--accent-gold)
+        );
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        margin-left: -2px;
+        border-radius: 2px;
+      }
+
+      .timeline-item {
+        padding: 10px 40px;
+        position: relative;
+        background-color: inherit;
+        width: 50%;
+        box-sizing: border-box;
+        margin-bottom: 40px;
+      }
+
+      .timeline-item.left {
+        left: 0;
+      }
+
+      .timeline-item.right {
+        left: 50%;
+      }
+
+      /* Точки на линии */
+      .timeline-item::after {
+        content: "";
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        right: -12px;
+        background-color: var(--bg-color);
+        border: 4px solid var(--accent-gold);
+        top: 20px;
+        border-radius: 50%;
+        z-index: 1;
+        box-shadow: 0 0 10px var(--accent-gold);
+      }
+
+      .timeline-item.right::after {
+        left: -12px;
+      }
+
+      /* Карточка этапа */
+      .content-card {
+        padding: 24px;
+        background-color: var(--card-bg);
+        position: relative;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        transition:
+          transform 0.3s,
+          border-color 0.3s;
+      }
+
+      .content-card:hover {
+        transform: translateY(-5px);
+        border-color: var(--accent-blue);
+      }
+
+      .content-card h3 {
+        margin-top: 0;
+        color: #ffffff;
+        font-size: 1.4rem;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .stage-icon {
+        font-size: 1.5rem;
+      }
+
+      /* Сетка внутри карточки */
+      .details-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-top: 15px;
+      }
+      .navigation {
+        position: absolute;
+        bottom: -2100px;
+        left: 60px;
+        right: 60px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .nav-btn {
+        text-decoration: none;
+        color: #58a6ff;
+        font-family: "Fira Code", monospace;
+        font-weight: bold;
+        border: 1px solid #30363d;
+        padding: 10px 20px;
+        border-radius: 8px;
+        background: #0d1117;
+        transition: all 0.3s ease;
+      }
+
+      .nav-btn:hover {
+        background: #58a6ff;
+        color: #0d1117;
+        box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
+      }
+
+      .nav-btn.disabled {
+        visibility: hidden;
+      }
+
+      .detail-row {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detail-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+      }
+
+      .detail-value {
+        font-size: 1rem;
+      }
+
+      /* Теги (Бэкенд, Фронтенд, Эмоции) */
+      .tag {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 5px;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .tag-ui {
+        background-color: rgba(88, 166, 255, 0.15);
+        color: var(--accent-blue);
+        border: 1px solid rgba(88, 166, 255, 0.3);
+      }
+      .tag-backend {
+        background-color: rgba(63, 185, 80, 0.15);
+        color: var(--accent-green);
+        border: 1px solid rgba(63, 185, 80, 0.3);
+      }
+      .tag-emotion {
+        background-color: rgba(227, 179, 65, 0.15);
+        color: var(--accent-gold);
+        border: 1px solid rgba(227, 179, 65, 0.3);
+      }
+
+      /* Адаптивность для мобилок */
+      @media screen and (max-width: 768px) {
+        .timeline::after {
+          left: 31px;
+        }
+        .timeline-item {
+          width: 100%;
+          padding-left: 70px;
+          padding-right: 25px;
+        }
+        .timeline-item.left::after,
+        .timeline-item.right::after {
+          left: 15px;
+        }
+        .timeline-item.right {
+          left: 0%;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div class="presentation-container">
-      <div class="slide">
-        <h1>3. Интерфейс и UX концепция</h1>
-        <ul>
-          <li>
-            <span class="highlight">Визуальный стиль:</span> Dark Mode, элементы
-            геймификации, кибер-стилистика.
-          </li>
-          <li>
-            <span class="highlight">Next.js Web Application:</span> Почему
-            Next.js App? Студенты живут в браузере. Им не нужно качать еще одно
-            приложение.
-          </li>
-          <li>
-            <span class="highlight">Главные экраны:</span>
-            <ul>
-              <li>
-                <b>Дерево скиллов (Профиль):</b> Статистика по звездам (Твои
-                стихии: Java-маг 15 lvl).
-              </li>
-              <li>
-                <b>Квест-Борд:</b> Список задач с привязанными статьями из Wiki.
-              </li>
-              <li>
-                <b>AI-Чат (Нейро-кузница):</b> Интерфейс заказа отчетов за
-                токены.
-              </li>
-            </ul>
-          </li>
-        </ul>
-        <p style="text-align: center; color: #8b949e; font-style: italic">
-          [ Здесь Костя должен вставить скрины мокапов из Figma ]
+    <div class="container">
+      <div class="header">
+        <h1>7.Путь Студента (CJM)</h1>
+        <p>
+          От скучной зачетки к офферу в Т-Банке через код-ревью и геймификацию.
         </p>
       </div>
-      <div class="navigation">
-        <a href="slide6.html" class="nav-btn">◀ Назад</a>
-        <a href="slide8.html" class="nav-btn">Вперед ▶</a>
+
+      <div class="timeline">
+        <!-- Шаг 1 -->
+        <div class="timeline-item left">
+          <div class="content-card">
+            <h3><span class="stage-icon">🚪</span> 1. Онбординг</h3>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Действие пользователя</span>
+                <span class="detail-value"
+                  >Студент авторизуется на платформе, выбирает профильную
+                  "Стихию" (например, Java) и видит свой пустой Дашборд.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Точка контакта (UI)</span>
+                <span class="tag tag-ui"
+                  >React SPA: Login Page & Dashboard</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Эмоции / Мысли</span>
+                <span class="tag tag-emotion"
+                  >🤩 Вау, выглядит как IDE, а не сайт универа!</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Магия под капотом (Система)</span>
+                <span class="tag tag-backend"
+                  >Java Spring: Генерация JWT, создание роли ROLE_STUDENT в
+                  PostgreSQL.</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 2 -->
+        <div class="timeline-item right">
+          <div class="content-card">
+            <h3><span class="stage-icon">📚</span> 2. Поиск знаний (Wiki)</h3>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Действие пользователя</span>
+                <span class="detail-value"
+                  >Ищет "Как настроить Spring Security". Читает топовую статью,
+                  написанную старшекурсником. Жмет "Поставить Звезду"
+                  (лайк).</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Точка контакта (UI)</span>
+                <span class="tag tag-ui">Wiki Search & Markdown Reader</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Эмоции / Мысли</span>
+                <span class="tag tag-emotion"
+                  >💡 Наконец-то понятный гайд, а не методичка 2004 года.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Магия под капотом (Система)</span>
+                <span class="tag tag-backend"
+                  >Axiom JDK API: Умный поиск с ORDER BY stars DESC. Начисление
+                  репутации автору статьи (Транзакция БД).</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 3 -->
+        <div class="timeline-item left">
+          <div class="content-card">
+            <h3><span class="stage-icon">⚔️</span> 3. Вызов (Квест-Борд)</h3>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Действие пользователя</span>
+                <span class="detail-value"
+                  >Берет практическую задачу "Написать REST контроллер". Пишет
+                  код, делает Pull Request на GitHub и прикрепляет ссылку в
+                  систему на проверку.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Точка контакта (UI)</span>
+                <span class="tag tag-ui">Task Board -> Submit Form</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Эмоции / Мысли</span>
+                <span class="tag tag-emotion"
+                  >😬 Надеюсь, ментор не сильно заругает мой код.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Магия под капотом (Система)</span>
+                <span class="tag tag-backend"
+                  >POST /submissions: Создание записи в БД со статусом PENDING.
+                  Уведомление менторам.</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 4 -->
+        <div class="timeline-item right">
+          <div class="content-card">
+            <h3>
+              <span class="stage-icon">🧙‍♂️</span> 4. Ревью Ментора (Core Feature)
+            </h3>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Действие Ментора</span>
+                <span class="detail-value"
+                  >Ментор открывает код, проверяет. В панели двигает ползунки:
+                  Дать +30 XP за навык "Java" и +50 Звезд Репутации. Оставляет
+                  коммент и жмет "Одобрить".</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Точка контакта (UI)</span>
+                <span class="tag tag-ui"
+                  >Mentor Review Dashboard (Sliders)</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Эмоции Студента (Уведомление)</span>
+                <span class="tag tag-emotion"
+                  >🥳 Ура! Level Up! Плюс фидбек от реального сеньора.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Магия под капотом (Система)</span>
+                <span class="tag tag-backend"
+                  >ACID транзакция: UPDATE user_skills, UPDATE users_balance.
+                  Статус APPROVED.</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Шаг 5 -->
+        <div class="timeline-item left">
+          <div class="content-card">
+            <h3><span class="stage-icon">🏆</span> 5. Триумф (HR & Награды)</h3>
+            <div class="details-grid">
+              <div class="detail-row">
+                <span class="detail-label">Действие пользователя</span>
+                <span class="detail-value"
+                  >Студент видит себя в ТОП-5 Лидерборда по Java. Получает
+                  инвайт на стажировку от HR Т-Банка. На заработанные звезды
+                  покупает мерч (худи) в магазине вуза.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Точка контакта (UI)</span>
+                <span class="tag tag-ui"
+                  >Public Leaderboard & Rewards Shop</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Эмоции / Мысли</span>
+                <span class="tag tag-emotion"
+                  >😎 Я готов к реальной работе. Мой профиль говорит сам за
+                  себя.</span
+                >
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Магия под капотом (Система)</span>
+                <span class="tag tag-backend"
+                  >Сложный SQL-запрос для агрегации и ранжирования
+                  подтвержденных скиллов. B2B вид для HR.</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+    <div class="navigation">
+      <a href="slide6.html" class="nav-btn">◀ Назад</a>
+      <a href="slide8.html" class="nav-btn">Вперед ▶</a>
     </div>
   </body>
 </html>
