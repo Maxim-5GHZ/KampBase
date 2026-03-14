@@ -37,6 +37,45 @@
         align-items: center;
         min-height: 100vh;
       }
+      .navigation {
+      position: absolute;
+      bottom: 30px;
+      left: -200px;
+      right: -200px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .start_navigation {
+      position: absolute;
+      bottom: 100px;
+      left: 100px;
+      right: 100px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .nav-btn {
+      text-decoration: none;
+      color: #58a6ff;
+      font-family: "Fira Code", monospace;
+      font-weight: bold;
+      border: 1px solid #30363d;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background: #0d1117;
+      transition: all 0.3s ease;
+    }
+
+    .nav-btn:hover {
+      background: #58a6ff;
+      color: #0d1117;
+      box-shadow: 0 0 15px rgba(88, 166, 255, 0.5);
+    }
+
+    .nav-btn.disabled {
+      visibility: hidden;
+    }
+
 
       .container {
         width: 100%;
@@ -384,7 +423,11 @@
             </div>
           </div>
         </div>
-
+        
     </div>
+    <div class="navigation">
+        <a href="slide9.html" class="nav-btn">◀ Назад</a>
+        <a href="slide1.html" class="nav-btn">Вперед ▶</a>
+      </div>
   </body>
 </html>
