@@ -3,460 +3,260 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>СтудБаза — Аналитика и Lean Canvas</title>
-    <style>
-      :root {
-        --bg-color: #0d1117;
-        --card-bg: #161b22;
-        --border-color: #30363d;
-        --text-main: #c9d1d9;
-        --text-muted: #8b949e;
-        --accent-blue: #58a6ff;
-        --accent-glow: rgba(88, 166, 255, 0.4);
-      }
-
-      body {
-        font-family:
-          "Inter",
-          -apple-system,
-          BlinkMacSystemFont,
-          "Segoe UI",
-          sans-serif;
-        background-color: var(--bg-color);
-        background-image: radial-gradient(
-          circle at 50% 0%,
-          rgba(88, 166, 255, 0.05) 0%,
-          transparent 60%
-        );
-        color: var(--text-main);
-        margin: 0;
-        padding: 40px 20px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-
-      .container {
-        width: 100%;
-        max-width: 900px; /* Оптимальная ширина для чтения слайда */
-        position: relative;
-        z-index: 1;
-      }
-
-      .canvas-header {
-        text-align: center;
-        margin-bottom: 30px;
-      }
-
-      .canvas-header h2 {
-        font-size: 2.5rem;
-        color: #ffffff;
-        margin: 0;
-        letter-spacing: -0.5px;
-        text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-      }
-
-      /* КАРУСЕЛЬ */
-      .carousel-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .carousel-container {
-        width: 100%;
-        overflow: hidden;
-        border-radius: 16px;
-        background: linear-gradient(
-          145deg,
-          rgba(22, 27, 34, 0.8),
-          rgba(13, 17, 23, 0.9)
-        );
-        border: 1px solid var(--border-color);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(10px);
-      }
-
-      .carousel-track {
-        display: flex;
-        transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-        width: 100%;
-      }
-
-      .carousel-slide {
-        min-width: 100%;
-        box-sizing: border-box;
-        padding: 50px 60px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-      }
-
-      /* СОДЕРЖИМОЕ КАРТОЧЕК */
-      .box-title {
-        font-size: 1.8rem;
-        color: #fff;
-        margin-bottom: 25px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        font-weight: 700;
-      }
-
-      .box-number {
-        background: var(--bg-color);
-        color: var(--accent-blue);
-        border: 1px solid var(--accent-blue);
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        font-family: "Fira Code", monospace;
-        font-size: 1.4rem;
-        box-shadow: 0 0 15px var(--accent-glow);
-      }
-
-      .carousel-slide ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .carousel-slide ul li {
-        position: relative;
-        padding-left: 25px;
-        line-height: 1.6;
-        font-size: 1.1rem;
-        color: var(--text-muted);
-      }
-
-      .carousel-slide ul li::before {
-        content: "▹";
-        position: absolute;
-        left: 0;
-        top: 0;
-        color: var(--accent-blue);
-        font-weight: bold;
-        font-size: 1.2rem;
-      }
-
-      .carousel-slide p {
-        font-size: 1.15rem;
-        line-height: 1.6;
-        color: var(--text-muted);
-        margin-bottom: 15px;
-      }
-
-      .carousel-slide b {
-        color: #fff;
-      }
-
-      .accent {
-        color: var(--accent-blue);
-        font-weight: 600;
-        background: rgba(88, 166, 255, 0.1);
-        padding: 2px 6px;
-        border-radius: 4px;
-      }
-
-      .flex-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 30px;
-      }
-
-      /* КНОПКИ УПРАВЛЕНИЯ КАРУСЕЛЬЮ */
-      .carousel-button {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: var(--card-bg);
-        color: var(--text-main);
-        border: 1px solid var(--border-color);
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        font-size: 1.2rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10;
-        transition: all 0.2s;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-      }
-
-      .carousel-button:hover {
-        background: var(--accent-blue);
-        color: #000;
-        border-color: var(--accent-blue);
-        box-shadow: 0 0 20px var(--accent-glow);
-      }
-
-      .carousel-button.prev {
-        left: -25px;
-      }
-      .carousel-button.next {
-        right: -25px;
-      }
-
-      /* ИНДИКАТОРЫ (ТОЧКИ) */
-      .carousel-indicators {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        margin-top: 25px;
-      }
-
-      .dot {
-        width: 10px;
-        height: 10px;
-        background: var(--border-color);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
-
-      .dot.active {
-        background: var(--accent-blue);
-        box-shadow: 0 0 10px var(--accent-glow);
-        transform: scale(1.3);
-      }
-
-      /* НАВИГАЦИЯ СЛАЙДА */
-      .navigation {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        max-width: 900px;
-        margin-top: 40px;
-      }
-
-      .nav-btn {
-        text-decoration: none;
-        color: var(--accent-blue);
-        font-family: "Fira Code", monospace;
-        font-weight: bold;
-        border: 1px solid var(--border-color);
-        padding: 12px 24px;
-        border-radius: 8px;
-        background: rgba(13, 17, 23, 0.8);
-        transition: all 0.3s ease;
-      }
-
-      .nav-btn:hover {
-        background: var(--accent-blue);
-        color: #0d1117;
-        box-shadow: 0 0 20px var(--accent-glow);
-        transform: scale(1.05);
-      }
-
-      @media (max-width: 768px) {
-        .flex-row {
-          grid-template-columns: 1fr;
-          gap: 15px;
-        }
-        .carousel-slide {
-          padding: 30px 20px;
-        }
-        .carousel-button {
-          display: none; /* Скрываем боковые кнопки на мобилках, оставляем точки */
-        }
-      }
-    </style>
+    <title>6. Lean Canvas: СтудБаза</title>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div class="container">
-      <div class="canvas-header">
-        <h2>6. Lean Canvas: СтудБаза</h2>
-      </div>
+    <div class="presentation-container">
+      <div class="slide">
+        <div class="slide-content">
+          <h1 class="center-title" style="margin-bottom: 30px">
+            6. Lean Canvas: СтудБаза
+          </h1>
 
-      <div class="carousel-wrapper">
-        <button class="carousel-button prev">◀</button>
+          <div class="carousel-wrapper">
+            <button class="carousel-button prev">◀</button>
 
-        <div class="carousel-container">
-          <div class="carousel-track">
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">1</span> Проблема
+            <div class="carousel-container">
+              <div class="carousel-track">
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">1</span> Проблема
+                  </h2>
+                  <ul>
+                    <li>
+                      <b>HR:</b>
+                      <span class="accent">Затраты времени и денег</span> на
+                      собеседования джунов без
+                      <span class="accent">реального опыта</span>. Оценки вуза
+                      ничего не значат. "Кот в мешке".
+                    </li>
+                    <li>
+                      <b>Студенты:</b> Нет
+                      <span class="accent">мотивации</span> писать чистый код.
+                      Нет портфолио. Знания теряются после сдачи лабы.
+                    </li>
+                    <li>
+                      <b>Вузы:</b>
+                      <span class="accent">Отрыв теории от практики</span>,
+                      устаревшие LMS-системы. Нет самоподдерживающегося
+                      комьюнити.
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">2</span> Сегменты клиентов
+                  </h2>
+                  <ul>
+                    <li><b>Платящие клиенты (B2B):</b> Технические вузы РФ.</li>
+                    <li><b>Партнеры (B2G):</b> IT-компании.</li>
+                    <li><b>Пользователи:</b> Студенты.</li>
+                    <li>
+                      <b>Проверяющие:</b> Менторы (Опытные студенты /
+                      Преподаватели).
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">3</span> Уникальная ценность
+                  </h2>
+                  <p
+                    style="font-size: 1.15rem; margin-bottom: 15px; color: #fff"
+                  >
+                    <b>«StackOverflow скрестили с Jira для вузов».</b>
+                  </p>
+                  <p>
+                    Единственная образовательная платформа, где студенты
+                    собирают
+                    <span class="accent"
+                      >верифицированное портфолио навыков (XP)</span
+                    >, код проверяется людьми, а HR видят прозрачный рейтинг
+                    талантов.
+                  </p>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">4</span> Решение
+                  </h2>
+                  <ul>
+                    <li>
+                      Открытая <span class="accent">Wiki-база знаний</span> с
+                      системой рейтинга (лайков) от комьюнити.
+                    </li>
+                    <li>
+                      Биржа практических задач с
+                      <span class="accent">ручным код-ревью</span> менторами.
+                    </li>
+                    <li>
+                      <span class="accent">HR-Лидерборд</span> с фильтрацией
+                      студентов по хард-скиллам.
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">5</span> Каналы сбыта
+                  </h2>
+                  <ul>
+                    <li>Студенческие IT-сообщества, хакатоны, конференции.</li>
+                    <li>Прямые B2B продажи вузам.</li>
+                  </ul>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">6</span> Потоки выручки
+                  </h2>
+                  <div class="content-grid" style="gap: 40px; margin-top: 0">
+                    <ul>
+                      <li>
+                        <b>Лицензия для вузов:</b> Единовременная или SaaS
+                        оплата за использование платформы.
+                      </li>
+                      <li>
+                        <b>White-Label:</b> Продажа коробочного решения вузам.
+                      </li>
+                    </ul>
+                    <ul>
+                      <li>
+                        <b>Спонсорские задачи:</b> Интеграция опенсурсных
+                        проектов от IT-компаний.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">7</span> Структура расходов
+                  </h2>
+                  <div class="content-grid" style="gap: 40px; margin-top: 0">
+                    <ul>
+                      <li>Поддержка серверов и баз данных.</li>
+                      <li>
+                        Разработка (Next.js Frontend + Java Spring Backend).
+                      </li>
+                    </ul>
+                    <ul>
+                      <li>
+                        Маркетинг: размещение баннеров и участие в конференциях
+                        для узнаваемости в целевой аудитории.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">8</span> Ключевые метрики
+                  </h2>
+                  <ul>
+                    <li><b>MAU (Wiki):</b> Активность в базе знаний.</li>
+                    <li>
+                      <b>Code Reviews:</b> Количество проверенных менторами
+                      задач.
+                    </li>
+                    <li>
+                      <b>Success Hires:</b> Количество офферов, сделанных HR
+                      через платформу.
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="carousel-slide">
+                  <h2
+                    style="
+                      display: flex;
+                      align-items: center;
+                      margin-bottom: 25px;
+                    "
+                  >
+                    <span class="box-number">9</span> Скрытое преимущество
+                  </h2>
+                  <ul>
+                    <li>
+                      <b>Технологический суверенитет:</b> Бэкенд на
+                      <span class="accent">Java</span> с отечественным
+                      <span class="accent">Axiom JDK</span>. БД — MariaDB.
+                      Готовность к работе в отечественных облаках и устойчивость
+                      к санкциям.
+                    </li>
+                    <li>
+                      <b>Масштабируемость:</b> Модульная архитектура, легкая
+                      интеграция с внешними сервисами (GitHub API,
+                      AI-ассистенты). Обеспечивает долгосрочную
+                      конкурентоспособность.
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <ul>
-                <li>
-                  <b>HR:</b>
-                  <span class="accent">Затраты времени и денег</span> на
-                  собеседования джунов без
-                  <span class="accent">реального опыта</span>. Оценки вуза
-                  ничего не значат. "Кот в мешке".
-                </li>
-                <li>
-                  <b>Студенты:</b> Нет
-                  <span class="accent">мотивации</span> писать чистый код. Нет
-                  портфолио. Знания теряются после сдачи лабы.
-                </li>
-                <li>
-                  <b>Вузы:</b>
-                  <span class="accent">Отрыв теории от практики</span>,
-                  устаревшие LMS-системы. Нет самоподдерживающегося комьюнити.
-                </li>
-              </ul>
             </div>
 
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">2</span> Сегменты клиентов
-              </div>
-              <ul>
-                <li><b>Платящие клиенты (B2B):</b> Технические вузы РФ.</li>
-                <li><b>Партнеры (B2G):</b> IT-компании.</li>
-                <li><b>Пользователи:</b> Студенты.</li>
-                <li>
-                  <b>Проверяющие:</b> Менторы (Опытные студенты /
-                  Преподаватели).
-                </li>
-              </ul>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">3</span> Уникальная ценность
-              </div>
-              <p><b>«StackOverflow скрестили с Jira для вузов».</b></p>
-              <p>
-                Единственная образовательная платформа, где студенты собирают
-                <span class="accent"
-                  >верифицированное портфолио навыков (XP)</span
-                >, код проверяется людьми, а HR видят прозрачный рейтинг
-                талантов.
-              </p>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">4</span> Решение
-              </div>
-              <ul>
-                <li>
-                  Открытая <span class="accent">Wiki-база знаний</span> с
-                  системой рейтинга (лайков) от комьюнити.
-                </li>
-                <li>
-                  Биржа практических задач с
-                  <span class="accent">ручным код-ревью</span> менторами.
-                </li>
-                <li>
-                  <span class="accent">HR-Лидерборд</span> с фильтрацией
-                  студентов по хард-скиллам.
-                </li>
-              </ul>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">5</span> Каналы сбыта
-              </div>
-              <ul>
-                <li>Студенческие IT-сообщества, хакатоны, конференции.</li>
-                <li>Прямые B2B продажи вузам.</li>
-              </ul>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">6</span> Потоки выручки
-              </div>
-              <div class="flex-row">
-                <ul>
-                  <li>
-                    <b>Лицензия для вузов:</b> Единовременная или SaaS оплата за
-                    использование платформы.
-                  </li>
-                  <li>
-                    <b>White-Label:</b> Продажа коробочного решения вузам.
-                  </li>
-                </ul>
-                <ul>
-                  <li>
-                    <b>Спонсорские задачи:</b> Интеграция опенсурсных проектов
-                    от IT-компаний.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">7</span> Структура расходов
-              </div>
-              <div class="flex-row">
-                <ul>
-                  <li>Поддержка серверов и баз данных.</li>
-                  <li>Разработка (Next.js Frontend + Java Spring Backend).</li>
-                </ul>
-                <ul>
-                  <li>
-                    Маркетинг: размещение баннеров и участие в конференциях для
-                    узнаваемости в целевой аудитории.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">8</span> Ключевые метрики
-              </div>
-              <ul>
-                <li><b>MAU (Wiki):</b> Активность в базе знаний.</li>
-                <li>
-                  <b>Code Reviews:</b> Количество проверенных менторами задач.
-                </li>
-                <li>
-                  <b>Success Hires:</b> Количество офферов, сделанных HR через
-                  платформу.
-                </li>
-              </ul>
-            </div>
-
-            <div class="carousel-slide">
-              <div class="box-title">
-                <span class="box-number">9</span> Скрытое преимущество
-              </div>
-              <ul>
-                <li>
-                  <b>Технологический суверенитет:</b> Бэкенд на
-                  <span class="accent">Java</span> с отечественным
-                  <span class="accent">Axiom JDK</span>. БД — MariaDB.
-                  Готовность к работе в отечественных облаках и устойчивость к
-                  санкциям.
-                </li>
-                <li>
-                  <b>Масштабируемость:</b> Модульная архитектура, легкая
-                  интеграция с внешними сервисами (GitHub API, AI-ассистенты).
-                  Обеспечивает долгосрочную конкурентоспособность.
-                </li>
-              </ul>
-            </div>
+            <button class="carousel-button next">▶</button>
           </div>
+
+          <div class="carousel-indicators"></div>
         </div>
 
-        <button class="carousel-button next">▶</button>
+        <div class="navigation">
+          <a href="slide5.html" class="nav-btn">◀ Назад</a>
+          <a href="slide7.html" class="nav-btn">Вперед ▶</a>
+        </div>
       </div>
-
-      <div class="carousel-indicators"></div>
-    </div>
-
-    <div class="navigation">
-      <a href="slide5.html" class="nav-btn">◀ Назад</a>
-      <a href="slide7.html" class="nav-btn">Вперед ▶</a>
     </div>
 
     <script>
@@ -482,10 +282,7 @@
       const dots = Array.from(indicatorsContainer.children);
 
       const updateCarousel = () => {
-        // Сдвигаем трек с помощью Flexbox %
         track.style.transform = `translateX(-${currentIndex * 100}%)`;
-
-        // Обновляем активную точку
         dots.forEach((dot) => dot.classList.remove("active"));
         dots[currentIndex].classList.add("active");
       };
@@ -507,7 +304,7 @@
         updateCarousel();
       });
 
-      // Поддержка свайпа на тачпадах и мобильных
+      // Поддержка свайпа
       let startX = 0;
       let isDragging = false;
 
@@ -520,9 +317,9 @@
         if (!isDragging) return;
         let endX = e.changedTouches[0].clientX;
         if (startX - endX > 50) {
-          nextButton.click(); // Свайп влево
+          nextButton.click();
         } else if (endX - startX > 50) {
-          prevButton.click(); // Свайп вправо
+          prevButton.click();
         }
         isDragging = false;
       });
