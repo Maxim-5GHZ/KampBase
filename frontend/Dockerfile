@@ -1,17 +1,18 @@
-# Dockerfile для Next.js (заглушка)
-FROM node:18-alpine
-
+# Build stage
+FROM node:20-alpine AS build
 WORKDIR /app
-
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
+COPY . .
+RUN npm run build
 
-# Создаем пустую папку .next
-RUN mkdir .next
-
-# Создаем заглушку для страницы index.js
-RUN mkdir pages && echo 'export default function Home() { return <h1>Frontend (placeholder)</h1>; }' > pages/index.js
+# Run stage
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=build /app/public ./public
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
-
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

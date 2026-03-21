@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+:root {
+  --background: hsla(242, 3%, 95%, 1);
+  --background-secondary: hsla(242, 3%, 95%, 0.7);
+  --secondary-color: hsla(182, 5%, 70%, 1);
+  --accent-color: hsla(216, 80%, 45%, 1);
+  --text-color: hsla(0, 0%, 15%, 1);
+  --placeholder-text-color: gray;
+
+  /* Для daisyUI */
+  --color-primary: var(--accent-color);
+  --color-secondary: var(--secondary-color);
+  --color-base-100: var(--background);
+  --color-base-content: var(--text-color);
+}
+
+:root.dark {
+  --background: hsla(242, 8%, 18%, 1);
+  --background-secondary: hsla(242, 10%, 20%, 0.5);
+  --secondary-color: hsla(182, 5%, 34%, 1);
+  --accent-color: hsla(216, 80%, 63%, 1);
+  --text-color: hsla(0, 0%, 95%, 1);
+  --placeholder-text-color: lightgray;
+}
+
+@theme inline {
+  --color-custom-bg-main: var(--background);
+  --color-custom-bg-secondary: var(--background-secondary);
+  --color-custom-secondary: var(--secondary-color);
+  --color-custom-main: var(--text-color);
+  --color-custom-accent: var(--accent-color);
+  --color-custom-placeholder: var(--placeholder-text-color);
+
+  --radius-button: 2rem;
+  --radius-search: 4rem;
+  --radius-card: 3rem;
+  
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+@plugin "daisyui/theme" {
+  name: "mytheme";
+  default: true;
+  /* prefersdark: true; */
+  
+  --primary: var(--accent-color);
+  --secondary: var(--secondary-color);
+  --base-100: var(--background);
+  --base-content: var(--text-color);
+  
+  --btn-color: var(--text-color);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-color);
+  font-family: var(--font-sans);
+}
