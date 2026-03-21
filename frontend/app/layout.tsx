@@ -1,6 +1,8 @@
+// frontend/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "./navbar";
+import AuthGuard from "./components/AuthGuard"; // <-- ДОБАВЛЕНО
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,10 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-custom-bg-main`}
       >
-        <Navbar />
-        <main className="pt-12">{children}</main>
+        {/* Оборачиваем всё приложение в защиту */}
+        <AuthGuard>
+          <Navbar />
+          <main className="pt-12">{children}</main>
+        </AuthGuard>
       </body>
     </html>
   );

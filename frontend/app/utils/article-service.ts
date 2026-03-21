@@ -23,31 +23,18 @@ class ArticleService {
     });
   }
 
-  async create(data: ArticleRequest): Promise<Article> {
-    const response = await this.http.post<Article>("", data);
-    return response.data;
-  }
-
   async createWithFile(
     data: Omit<ArticleRequest, "link">,
     file: File,
   ): Promise<Article> {
-    // Шаг 1: Загрузка файла
     const uploadedFileUrl = await fileService.uploadFile(file);
 
-    // Шаг 2: Формирование запроса к БД статей
     const finalData: ArticleRequest = {
       ...data,
-      link: uploadedFileUrl, // Ссылка теперь указывает на наш сервер
+      link: uploadedFileUrl,
     };
 
-    // Шаг 3: Сохранение метаданных статьи
     const response = await this.http.post<Article>("", finalData);
-    return response.data;
-  }
-
-  async update(id: number, data: ArticleRequest): Promise<Article> {
-    const response = await this.http.put<Article>(`/${id}`, data);
     return response.data;
   }
 
@@ -62,7 +49,6 @@ class ArticleService {
   }
 
   async getAll(): Promise<Article[]> {
-    // ИСПРАВЛЕНО: Изменено с "/" на ""
     const response = await this.http.get<Article[]>("");
     return response.data;
   }

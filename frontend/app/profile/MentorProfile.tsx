@@ -5,9 +5,10 @@ import { Plus, X } from 'lucide-react';
 import MentorProfileCard from './MentorProfileCard';
 import WorkArea from './MentorWorkArea';
 import { taskService } from '@/app/utils/task-service';
-import { TaskRequest } from '@/app/utils/types';
-import { Task } from '@/app/utils/types';
+import { articleService } from '@/app/utils/article-service';
+import { Article, ArticleRequest, ArticleFormat, TaskRequest, Task } from '@/app/utils/types';
 import { authService } from '../utils/auth-service';
+import MyArticles from "./MyArticles";
 
 export default function MentorProfile() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,8 +22,26 @@ export default function MentorProfile() {
         skillName: 'Java',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [articles, setArticles] = useState<Article[]>([]);
 
-    // Загрузка задач
+    const fetchArticles = async () => {
+        try {
+            const fetchedArticles = await articleService.getAll();
+            setArticles(fetchedArticles);
+        } catch (error) {
+            console.error("Ошибка при загрузке статей:", error);
+        }
+    };
+
+    const handleDeleteArticle = async (id: number) => {
+        try {
+            await articleService.delete(id);
+            fetchArticles();
+        } catch (error) {
+            console.error("Ошибка при удалении статьи:", error);
+        }
+    };
+
     const fetchTasks = async () => {
         try {
         setLoadingTasks(true);
@@ -47,6 +66,7 @@ export default function MentorProfile() {
 
     useEffect(() => {
         fetchTasks();
+        fetchArticles();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +76,7 @@ export default function MentorProfile() {
         await taskService.createTask(formData);
         setIsModalOpen(false);
         setFormData({ title: '', about: '', githubLink: '', skillName: 'Java' });
-        await fetchTasks(); // <-- обновляем список
+        await fetchTasks();
         } catch (error) {
         console.error('Ошибка при создании задания:', error);
         } finally {
@@ -79,10 +99,10 @@ export default function MentorProfile() {
             </div>
             <div className="flex-1">
             <WorkArea tasks={tasks} loading={loadingTasks} error={errorTasks}/>
+            <MyArticles articles={articles} onDelete={handleDeleteArticle} />
             </div>
         </div>
 
-        {/* Кнопка создания задания (показывается, если окно закрыто) */}
         {!isModalOpen && (
             <button
             onClick={() => setIsModalOpen(true)}
@@ -93,11 +113,9 @@ export default function MentorProfile() {
             </button>
         )}
 
-        {/* Модальное окно */}
         {isModalOpen && (
             <div className="backdrop-blur-sm fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-custom-bg-main rounded-4xl shadow-xl w-full max-w-md">
-                {/* Заголовок */}
                 <div className="flex justify-between items-center p-4 border-b border-custom-secondary">
                 <h2 className="text-xl font-semibold text-custom-main">Создать задание</h2>
                 <button
@@ -108,7 +126,6 @@ export default function MentorProfile() {
                 </button>
                 </div>
 
-                {/* Форма */}
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">
                 <div>
                     <label htmlFor="title" className="block text-custom-main mb-1">

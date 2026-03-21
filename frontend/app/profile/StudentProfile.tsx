@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import StudentProfileCard from './StudentProfileCard';
 import WorkArea from './StudentWorkArea';
 import { nodes } from './_tree/data';
 import { articleService } from '@/app/utils/article-service';
-import { ArticleRequest, ArticleFormat } from '@/app/utils/types';
+import { Article, ArticleRequest, ArticleFormat } from '@/app/utils/types';
+import MyArticles from "./MyArticles";
 
 export default function StudentProfile() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,6 +19,29 @@ export default function StudentProfile() {
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [articles, setArticles] = useState<Article[]>([]);
+
+    const fetchArticles = async () => {
+        try {
+            const fetchedArticles = await articleService.getAll();
+            setArticles(fetchedArticles);
+        } catch (error) {
+            console.error("Ошибка при загрузке статей:", error);
+        }
+    };
+
+    const handleDeleteArticle = async (id: number) => {
+        try {
+            await articleService.delete(id);
+            fetchArticles();
+        } catch (error) {
+            console.error("Ошибка при удалении статьи:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchArticles();
+    }, []);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -45,9 +69,7 @@ export default function StudentProfile() {
         setIsSubmitting(true);
         try {
             await articleService.createWithFile(formData, selectedFile);
-            // Закрываем окно после успешного создания
             setIsModalOpen(false);
-            // Сбрасываем форму
             setFormData({
                 title: '',
                 about: '',
@@ -55,7 +77,7 @@ export default function StudentProfile() {
                 previewPhotoLink: '',
             });
             setSelectedFile(null);
-            // Здесь можно добавить обновление списка статей, если необходимо
+            fetchArticles();
         } catch (error) {
             console.error('Ошибка при создании статьи:', error);
             alert('Не удалось создать статью');
@@ -72,10 +94,10 @@ export default function StudentProfile() {
                 </div>
                 <div className="flex-1">
                     <WorkArea nodes={nodes} skillPoints={3} />
+                    <MyArticles articles={articles} onDelete={handleDeleteArticle} />
                 </div>
             </div>
 
-            {/* Кнопка добавления статьи (показывается, если окно закрыто) */}
             {!isModalOpen && (
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -86,11 +108,9 @@ export default function StudentProfile() {
                 </button>
             )}
 
-            {/* Модальное окно */}
             {isModalOpen && (
                 <div className="backdrop-blur-sm fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-8">
                     <div className="bg-custom-bg-main rounded-4xl shadow-xl w-full max-w-md">
-                        {/* Заголовок */}
                         <div className="flex justify-between items-center p-4 border-b border-custom-secondary">
                             <h2 className="text-xl font-semibold text-custom-main">Добавить статью</h2>
                             <button
@@ -101,7 +121,6 @@ export default function StudentProfile() {
                             </button>
                         </div>
 
-                        {/* Форма */}
                         <form onSubmit={handleSubmit} className="p-4 space-y-4">
                             <div>
                                 <label htmlFor="title" className="block text-custom-main mb-1">

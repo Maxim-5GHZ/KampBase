@@ -1,3 +1,4 @@
+
 import axios, { AxiosInstance } from "axios";
 import { authService } from "./auth-service";
 
@@ -7,6 +8,9 @@ class FileService {
   constructor(baseURL: string = "/api/files") {
     this.http = axios.create({
       baseURL,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
 
     this.http.interceptors.request.use((config) => {
@@ -18,18 +22,12 @@ class FileService {
     });
   }
 
-  // Метод принимает объект File (из <input type="file">)
   async uploadFile(file: File): Promise<string> {
     const formData = new FormData();
-    formData.append("file", file); // Ключ "file" должен совпадать с @RequestParam("file") в Java
+    formData.append("file", file);
 
-    const response = await this.http.post<{ message: string; url: string }>("/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    return response.data.url; // Возвращаем готовую ссылку (http://localhost:8080/uploads/...)
+    const response = await this.http.post<string>("/upload", formData);
+    return response.data;
   }
 }
 

@@ -2013,31 +2013,18 @@ class ArticleService {
     });
   }
 
-  async create(data: ArticleRequest): Promise<Article> {
-    const response = await this.http.post<Article>("", data);
-    return response.data;
-  }
-
   async createWithFile(
     data: Omit<ArticleRequest, "link">,
     file: File,
   ): Promise<Article> {
-    // Шаг 1: Загрузка файла
     const uploadedFileUrl = await fileService.uploadFile(file);
 
-    // Шаг 2: Формирование запроса к БД статей
     const finalData: ArticleRequest = {
       ...data,
-      link: uploadedFileUrl, // Ссылка теперь указывает на наш сервер
+      link: uploadedFileUrl,
     };
 
-    // Шаг 3: Сохранение метаданных статьи
     const response = await this.http.post<Article>("", finalData);
-    return response.data;
-  }
-
-  async update(id: number, data: ArticleRequest): Promise<Article> {
-    const response = await this.http.put<Article>(`/${id}`, data);
     return response.data;
   }
 
@@ -2052,7 +2039,6 @@ class ArticleService {
   }
 
   async getAll(): Promise<Article[]> {
-    // ИСПРАВЛЕНО: Изменено с "/" на ""
     const response = await this.http.get<Article[]>("");
     return response.data;
   }
@@ -2202,6 +2188,7 @@ export interface Article extends ArticleRequest {
 
 
 File: ./frontend/app/utils/file-services.ts
+
 import axios, { AxiosInstance } from "axios";
 import { authService } from "./auth-service";
 
@@ -2211,6 +2198,9 @@ class FileService {
   constructor(baseURL: string = "/api/files") {
     this.http = axios.create({
       baseURL,
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
     });
 
     this.http.interceptors.request.use((config) => {
@@ -2222,22 +2212,17 @@ class FileService {
     });
   }
 
-  // Метод принимает объект File (из <input type="file">)
   async uploadFile(file: File): Promise<string> {
     const formData = new FormData();
-    formData.append("file", file); // Ключ "file" должен совпадать с @RequestParam("file") в Java
+    formData.append("file", file);
 
-    const response = await this.http.post<{ message: string; url: string }>("/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    return response.data.url; // Возвращаем готовую ссылку (http://localhost:8080/uploads/...)
+    const response = await this.http.post<string>("/upload", formData);
+    return response.data;
   }
 }
 
 export const fileService = new FileService();
+
 
 ============================================================
 
@@ -2745,9 +2730,11 @@ function SkeletonCard() {
 
 
 File: ./frontend/app/layout.tsx
+// frontend/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from "./navbar";
+import AuthGuard from "./components/AuthGuard"; // <-- ДОБАВЛЕНО
 import "./globals.css";
 
 const geistSans = Geist({
@@ -2773,14 +2760,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-custom-bg-main`}
       >
-        <Navbar />
-        <main className="pt-12">{children}</main>
+        {/* Оборачиваем всё приложение в защиту */}
+        <AuthGuard>
+          <Navbar />
+          <main className="pt-12">{children}</main>
+        </AuthGuard>
       </body>
     </html>
   );
 }
+
 
 ============================================================
 
@@ -3512,6 +3503,56 @@ export default function RegisterPage() {
 ============================================================
 
 
+File: ./frontend/app/components/AuthGuard.tsx
+// frontend/app/components/AuthGuard.tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { authService } from "@/app/utils/auth-service";
+
+// Список маршрутов, доступных без авторизации
+const publicRoutes = ["/login", "/registration", "/forgot-password"];
+
+export default function AuthGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    // Проверяем, авторизован ли юзер (есть ли токен в localStorage)
+    const isAuth = authService.isAuthenticated();
+    const isPublicRoute = publicRoutes.includes(pathname);
+
+    if (!isAuth && !isPublicRoute) {
+      // Если не авторизован и лезет на закрытую страницу -> на логин
+      router.replace("/login");
+    } else if (isAuth && isPublicRoute) {
+      // Если авторизован и лезет на логин/регистрацию -> кидаем в профиль
+      router.replace("/profile");
+    } else {
+      // Всё ок, разрешаем рендер
+      setIsChecking(false);
+    }
+  }, [pathname, router]);
+
+  // Пока идет проверка (доли секунды), показываем лоадер,
+  // чтобы юзер не увидел "моргание" закрытой страницы
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-custom-bg-main">
+        <span className="loading loading-spinner loading-lg text-custom-accent"></span>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+
+============================================================
+
+
 File: ./frontend/app/components/FilterPanel.tsx
 "use client";
 
@@ -3650,142 +3691,153 @@ export default function Home() {
 
 
 File: ./frontend/app/navbar.tsx
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { User, BookOpen, ClipboardList, Trophy, Sun, Moon } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { User, BookOpen, ClipboardList, Trophy, Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const Navbar = () => {
-    const pathname = usePathname();
-    const [clickedItem, setClickedItem] = useState<string | null>(null);
-    const [isDark, setIsDark] = useState(false);
+  const pathname = usePathname();
+  const [clickedItem, setClickedItem] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(false);
 
-    // Применить тему
-    const applyTheme = (dark: boolean) => {
-        if (dark) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
+  const publicRoutes = ["/login", "/registration", "/forgot-password"];
+  if (publicRoutes.includes(pathname)) return null;
+  // Применить тему
+  const applyTheme = (dark: boolean) => {
+    if (dark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  // Инициализация темы при загрузке
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "dark") {
+      setIsDark(true);
+      applyTheme(true);
+    } else if (storedTheme === "light") {
+      setIsDark(false);
+      applyTheme(false);
+    } else {
+      // Нет сохранённой темы – используем системные настройки
+      const systemPrefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)",
+      ).matches;
+      setIsDark(systemPrefersDark);
+      applyTheme(systemPrefersDark);
+    }
+
+    // Следим за изменением системной темы, если пользователь не выбрал вручную
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      const stored = localStorage.getItem("theme");
+      if (!stored) {
+        // Нет сохранённого выбора – следуем за системой
+        setIsDark(e.matches);
+        applyTheme(e.matches);
+      }
     };
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
-    // Инициализация темы при загрузке
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme === 'dark') {
-            setIsDark(true);
-            applyTheme(true);
-        } else if (storedTheme === 'light') {
-            setIsDark(false);
-            applyTheme(false);
-        } else {
-            // Нет сохранённой темы – используем системные настройки
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setIsDark(systemPrefersDark);
-            applyTheme(systemPrefersDark);
-        }
+  // Переключение темы по кнопке
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const newTheme = !prev;
+      localStorage.setItem("theme", newTheme ? "dark" : "light");
+      applyTheme(newTheme);
+      return newTheme;
+    });
+  };
 
-        // Следим за изменением системной темы, если пользователь не выбрал вручную
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const handleChange = (e: MediaQueryListEvent) => {
-            const stored = localStorage.getItem('theme');
-            if (!stored) {
-                // Нет сохранённого выбора – следуем за системой
-                setIsDark(e.matches);
-                applyTheme(e.matches);
-            }
-        };
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
-    }, []);
+  const menuItems = [
+    { name: "Профиль", path: "/profile", icon: User },
+    { name: "Wiki", path: "/wiki", icon: BookOpen },
+    { name: "Задания", path: "/tasks", icon: ClipboardList },
+    { name: "Топ студентов", path: "/leaderboard", icon: Trophy },
+  ];
 
-    // Переключение темы по кнопке
-    const toggleTheme = () => {
-        setIsDark(prev => {
-            const newTheme = !prev;
-            localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-            applyTheme(newTheme);
-            return newTheme;
-        });
-    };
+  const handleClick = (name: string) => {
+    setClickedItem(name);
+    setTimeout(() => setClickedItem(null), 200);
+  };
 
-    const menuItems = [
-        { name: 'Профиль', path: '/profile', icon: User },
-        { name: 'Wiki', path: '/wiki', icon: BookOpen },
-        { name: 'Задания', path: '/tasks', icon: ClipboardList },
-        { name: 'Топ студентов', path: '/leaderboard', icon: Trophy },
-    ];
+  return (
+    <nav className="fixed top-0 left-0 w-full h-12 custom-bg-secondary backdrop-blur-sm bg-opacity-90 z-50 flex items-center justify-center gap-3 sm:gap-6 px-2 sm:px-4">
+      {/* Декоративная линия */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-linear-to-r from-transparent via-custom-accent to-transparent" />
 
-    const handleClick = (name: string) => {
-        setClickedItem(name);
-        setTimeout(() => setClickedItem(null), 200);
-    };
+      {menuItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = pathname === item.path;
+        const isClicked = clickedItem === item.name;
 
-    return (
-        <nav className="fixed top-0 left-0 w-full h-12 custom-bg-secondary backdrop-blur-sm bg-opacity-90 z-50 flex items-center justify-center gap-3 sm:gap-6 px-2 sm:px-4">
-            {/* Декоративная линия */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-linear-to-r from-transparent via-custom-accent to-transparent" />
-
-            {menuItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.path;
-                const isClicked = clickedItem === item.name;
-
-                return (
-                    <Link
-                        key={item.path}
-                        href={item.path}
-                        onClick={() => handleClick(item.name)}
-                        className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-md transition-all duration-300 group"
-                    >
-                        <Icon
-                            size={20}
-                            className={`
+        return (
+          <Link
+            key={item.path}
+            href={item.path}
+            onClick={() => handleClick(item.name)}
+            className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-md transition-all duration-300 group"
+          >
+            <Icon
+              size={20}
+              className={`
                                 transition-all duration-300
-                                ${isActive ? 'text-custom-accent' : 'text-custom-secondary group-hover:text-custom-main group-hover:scale-110'}
-                                ${isClicked ? 'scale-125 text-custom-accent' : ''}
+                                ${isActive ? "text-custom-accent" : "text-custom-secondary group-hover:text-custom-main group-hover:scale-110"}
+                                ${isClicked ? "scale-125 text-custom-accent" : ""}
                             `}
-                        />
-                        <span
-                            className={`
+            />
+            <span
+              className={`
                                 hidden sm:inline-block text-sm transition-all duration-300
-                                ${isActive ? 'text-custom-main' : 'text-custom-secondary group-hover:text-custom-main'}
-                                ${isClicked ? 'scale-105' : ''}
+                                ${isActive ? "text-custom-main" : "text-custom-secondary group-hover:text-custom-main"}
+                                ${isClicked ? "scale-105" : ""}
                             `}
-                        >
-                            {item.name}
-                        </span>
-                        {isActive && (
-                            <span className="hidden sm:inline-block ml-1 w-1.5 h-1.5 rounded-full bg-custom-accent animate-pulse" />
-                        )}
-                        {isClicked && (
-                            <span className="absolute inset-0 rounded-md bg-custom-accent opacity-20 animate-ping" />
-                        )}
-                    </Link>
-                );
-            })}
+            >
+              {item.name}
+            </span>
+            {isActive && (
+              <span className="hidden sm:inline-block ml-1 w-1.5 h-1.5 rounded-full bg-custom-accent animate-pulse" />
+            )}
+            {isClicked && (
+              <span className="absolute inset-0 rounded-md bg-custom-accent opacity-20 animate-ping" />
+            )}
+          </Link>
+        );
+      })}
 
-            {/* Блок переключения темы */}
-            <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-                <button
-                    onClick={toggleTheme}
-                    className="cursor-pointer p-1 rounded-md transition-all duration-300 hover:scale-110 focus:outline-none"
-                    aria-label="Переключить тему"
-                >
-                    {isDark ? (
-                        <Sun size={22} className="text-custom-secondary hover:text-custom-main" />
-                    ) : (
-                        <Moon size={22} className="text-custom-secondary hover:text-custom-main" />
-                    )}
-                </button>
-            </div>
-        </nav>
-    );
+      {/* Блок переключения темы */}
+      <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          className="cursor-pointer p-1 rounded-md transition-all duration-300 hover:scale-110 focus:outline-none"
+          aria-label="Переключить тему"
+        >
+          {isDark ? (
+            <Sun
+              size={22}
+              className="text-custom-secondary hover:text-custom-main"
+            />
+          ) : (
+            <Moon
+              size={22}
+              className="text-custom-secondary hover:text-custom-main"
+            />
+          )}
+        </button>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;
+
 
 ============================================================
 
@@ -3963,13 +4015,14 @@ export default function LoginPage() {
 File: ./frontend/app/profile/StudentProfile.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import StudentProfileCard from './StudentProfileCard';
 import WorkArea from './StudentWorkArea';
 import { nodes } from './_tree/data';
 import { articleService } from '@/app/utils/article-service';
-import { ArticleRequest, ArticleFormat } from '@/app/utils/types';
+import { Article, ArticleRequest, ArticleFormat } from '@/app/utils/types';
+import MyArticles from "./MyArticles";
 
 export default function StudentProfile() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -3981,6 +4034,29 @@ export default function StudentProfile() {
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [articles, setArticles] = useState<Article[]>([]);
+
+    const fetchArticles = async () => {
+        try {
+            const fetchedArticles = await articleService.getAll();
+            setArticles(fetchedArticles);
+        } catch (error) {
+            console.error("Ошибка при загрузке статей:", error);
+        }
+    };
+
+    const handleDeleteArticle = async (id: number) => {
+        try {
+            await articleService.delete(id);
+            fetchArticles();
+        } catch (error) {
+            console.error("Ошибка при удалении статьи:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchArticles();
+    }, []);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -4008,9 +4084,7 @@ export default function StudentProfile() {
         setIsSubmitting(true);
         try {
             await articleService.createWithFile(formData, selectedFile);
-            // Закрываем окно после успешного создания
             setIsModalOpen(false);
-            // Сбрасываем форму
             setFormData({
                 title: '',
                 about: '',
@@ -4018,7 +4092,7 @@ export default function StudentProfile() {
                 previewPhotoLink: '',
             });
             setSelectedFile(null);
-            // Здесь можно добавить обновление списка статей, если необходимо
+            fetchArticles();
         } catch (error) {
             console.error('Ошибка при создании статьи:', error);
             alert('Не удалось создать статью');
@@ -4035,10 +4109,10 @@ export default function StudentProfile() {
                 </div>
                 <div className="flex-1">
                     <WorkArea nodes={nodes} skillPoints={3} />
+                    <MyArticles articles={articles} onDelete={handleDeleteArticle} />
                 </div>
             </div>
 
-            {/* Кнопка добавления статьи (показывается, если окно закрыто) */}
             {!isModalOpen && (
                 <button
                     onClick={() => setIsModalOpen(true)}
@@ -4049,11 +4123,9 @@ export default function StudentProfile() {
                 </button>
             )}
 
-            {/* Модальное окно */}
             {isModalOpen && (
                 <div className="backdrop-blur-sm fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-8">
                     <div className="bg-custom-bg-main rounded-4xl shadow-xl w-full max-w-md">
-                        {/* Заголовок */}
                         <div className="flex justify-between items-center p-4 border-b border-custom-secondary">
                             <h2 className="text-xl font-semibold text-custom-main">Добавить статью</h2>
                             <button
@@ -4064,7 +4136,6 @@ export default function StudentProfile() {
                             </button>
                         </div>
 
-                        {/* Форма */}
                         <form onSubmit={handleSubmit} className="p-4 space-y-4">
                             <div>
                                 <label htmlFor="title" className="block text-custom-main mb-1">
@@ -4179,9 +4250,10 @@ import { Plus, X } from 'lucide-react';
 import MentorProfileCard from './MentorProfileCard';
 import WorkArea from './MentorWorkArea';
 import { taskService } from '@/app/utils/task-service';
-import { TaskRequest } from '@/app/utils/types';
-import { Task } from '@/app/utils/types';
+import { articleService } from '@/app/utils/article-service';
+import { Article, ArticleRequest, ArticleFormat, TaskRequest, Task } from '@/app/utils/types';
 import { authService } from '../utils/auth-service';
+import MyArticles from "./MyArticles";
 
 export default function MentorProfile() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -4195,8 +4267,26 @@ export default function MentorProfile() {
         skillName: 'Java',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [articles, setArticles] = useState<Article[]>([]);
 
-    // Загрузка задач
+    const fetchArticles = async () => {
+        try {
+            const fetchedArticles = await articleService.getAll();
+            setArticles(fetchedArticles);
+        } catch (error) {
+            console.error("Ошибка при загрузке статей:", error);
+        }
+    };
+
+    const handleDeleteArticle = async (id: number) => {
+        try {
+            await articleService.delete(id);
+            fetchArticles();
+        } catch (error) {
+            console.error("Ошибка при удалении статьи:", error);
+        }
+    };
+
     const fetchTasks = async () => {
         try {
         setLoadingTasks(true);
@@ -4221,6 +4311,7 @@ export default function MentorProfile() {
 
     useEffect(() => {
         fetchTasks();
+        fetchArticles();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -4230,7 +4321,7 @@ export default function MentorProfile() {
         await taskService.createTask(formData);
         setIsModalOpen(false);
         setFormData({ title: '', about: '', githubLink: '', skillName: 'Java' });
-        await fetchTasks(); // <-- обновляем список
+        await fetchTasks();
         } catch (error) {
         console.error('Ошибка при создании задания:', error);
         } finally {
@@ -4253,10 +4344,10 @@ export default function MentorProfile() {
             </div>
             <div className="flex-1">
             <WorkArea tasks={tasks} loading={loadingTasks} error={errorTasks}/>
+            <MyArticles articles={articles} onDelete={handleDeleteArticle} />
             </div>
         </div>
 
-        {/* Кнопка создания задания (показывается, если окно закрыто) */}
         {!isModalOpen && (
             <button
             onClick={() => setIsModalOpen(true)}
@@ -4267,11 +4358,9 @@ export default function MentorProfile() {
             </button>
         )}
 
-        {/* Модальное окно */}
         {isModalOpen && (
             <div className="backdrop-blur-sm fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-custom-bg-main rounded-4xl shadow-xl w-full max-w-md">
-                {/* Заголовок */}
                 <div className="flex justify-between items-center p-4 border-b border-custom-secondary">
                 <h2 className="text-xl font-semibold text-custom-main">Создать задание</h2>
                 <button
@@ -4282,7 +4371,6 @@ export default function MentorProfile() {
                 </button>
                 </div>
 
-                {/* Форма */}
                 <form onSubmit={handleSubmit} className="p-4 space-y-4">
                 <div>
                     <label htmlFor="title" className="block text-custom-main mb-1">
@@ -5437,23 +5525,93 @@ export default function HRProfileCard() {
 
 
 File: ./frontend/app/profile/HRProfile.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
 import HRProfileCard from './HRProfileCard';
 import HRWorkArea from './HRWorkArea';
+import { articleService } from '../utils/article-service';
+import { Article } from '../utils/types';
+import MyArticles from './MyArticles';
 
 export default function HRProfile() {
-    return (
-        <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen">
-            {/* Блок профиля */}
-            <div className="w-full lg:w-1/5 mb-4 lg:mb-0 md:mr-8">
-                <HRProfileCard />
-            </div>
-            {/* Рабочая область */}
-            <div className="flex-1">
-                <HRWorkArea />
-            </div>
-        </div>
-    );
+  const [articles, setArticles] = useState<Article[]>([]);
+
+  const fetchArticles = async () => {
+    try {
+      const fetchedArticles = await articleService.getAll();
+      setArticles(fetchedArticles);
+    } catch (error) {
+      console.error('Ошибка при загрузке статей:', error);
+    }
+  };
+
+  const handleDeleteArticle = async (id: number) => {
+    try {
+      await articleService.delete(id);
+      fetchArticles();
+    } catch (error) {
+      console.error('Ошибка при удалении статьи:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  return (
+    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen">
+      <div className="w-full lg:w-1/5 mb-4 lg:mb-0 md:mr-8">
+        <HRProfileCard />
+      </div>
+      <div className="flex-1">
+        <HRWorkArea />
+        <MyArticles articles={articles} onDelete={handleDeleteArticle} />
+      </div>
+    </div>
+  );
 }
+
+============================================================
+
+
+File: ./frontend/app/profile/MyArticles.tsx
+
+import React from "react";
+import { Article } from "../utils/types";
+import { Trash2 } from "lucide-react";
+
+interface MyArticlesProps {
+  articles: Article[];
+  onDelete: (id: number) => void;
+}
+
+const MyArticles: React.FC<MyArticlesProps> = ({ articles, onDelete }) => {
+  return (
+    <div className="mt-8">
+      <h2 className="text-2xl font-bold mb-4">My Articles</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {articles.map((article) => (
+          <div key={article.id} className="bg-white rounded-lg shadow-md p-4">
+            <h3 className="text-xl font-bold">{article.title}</h3>
+            <p className="text-gray-500">{article.about}</p>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => onDelete(article.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default MyArticles;
+
 
 ============================================================
 
@@ -5524,51 +5682,68 @@ File: ./frontend/app/profile/page.tsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/utils/auth-service";
+import { articleService } from "@/app/utils/article-service";
 import MentorProfile from "./MentorProfile";
 import StudentProfile from "./StudentProfile";
 import HRProfile from "./HRProfile";
+import { Article } from "../utils/types";
 
 export default function ProfilePage() {
-    const router = useRouter();
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>([]);
 
-    useEffect(() => {
-        // Check authentication
-        if (!authService.isAuthenticated()) {
-        router.push("/login");
-        return;
-        }
+  const fetchArticles = async () => {
+    try {
+      const fetchedArticles = await articleService.getAll();
+      setArticles(fetchedArticles);
+    } catch (error) {
+      console.error("Ошибка при загрузке статей:", error);
+    }
+  };
 
-        // Get user info
-        const user = authService.getCurrentUser();
-        if (user && user.roles.length > 0) {
-        // Assuming the user has exactly one role, take the first one
-        setUserRole(user.roles[0]);
-        } else {
-        // If no user info (maybe token expired or not stored), redirect to login
-        router.push("/login");
-        }
-        setLoading(false);
-    }, [router]);
+  const handleDeleteArticle = async (id: number) => {
+    try {
+      await articleService.delete(id);
+      fetchArticles();
+    } catch (error) {
+      console.error("Ошибка при удалении статьи:", error);
+    }
+  };
 
-    if (loading) {
-        return <div>Loading...</div>;
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      router.push("/login");
+      return;
     }
 
-    console.log(userRole);
-    // Render appropriate profile component based on role
-    switch (userRole) {
-        case "ROLE_MENTOR":
-        return <MentorProfile />;
-        case "ROLE_STUDENT":
-        return <StudentProfile />;
-        case "ROLE_HR":
-        return <HRProfile />;
-        default:
-        // Fallback: maybe show error or redirect
-        return <div>Unknown user role</div>;
+    const user = authService.getCurrentUser();
+    if (user && user.roles.length > 0) {
+      setUserRole(user.roles[0]);
+    } else {
+      router.push("/login");
     }
+    setLoading(false);
+  }, [router]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  switch (userRole) {
+    case "ROLE_MENTOR":
+      return <MentorProfile />;
+    case "ROLE_STUDENT":
+      return (
+        <StudentProfile
+        />
+      );
+    case "ROLE_HR":
+      return <HRProfile />;
+    default:
+      return <div>Unknown user role</div>;
+  }
 }
 
 ============================================================
@@ -6086,771 +6261,6 @@ const LeaderboardPage = () => {
 };
 
 export default LeaderboardPage;
-
-============================================================
-
-
-File: ./frontend/test-back.ts
-// test-back.ts
-import { authService } from "./api/auth-service";
-import { taskService } from "./api/task-service";
-import { hrService } from "./api/hr-service";
-import { skillService } from "./api/skill-service";
-import { articleService } from "./api/article-service";
-import { fileService } from "./api/file-services";
-import { Role, ArticleFormat } from "./api/types";
-
-// Утилиты для душного логирования
-const logStep = (step: string) => {
-  console.log(`\n${"=".repeat(80)}`);
-  console.log(`🚀 ЭТАП: ${step}`);
-  console.log(`${"=".repeat(80)}`);
-};
-
-const logSuccess = (msg: string) => console.log(`  ✅ [УСПЕХ] ${msg}`);
-const logInfo = (msg: string) => console.log(`  ℹ️ [ИНФО]  ${msg}`);
-const logNerd = (msg: string) => console.log(`  🤓 [ASSERT] ${msg}`);
-
-// Хелпер для проверки ожидаемых ошибок
-async function expectError(
-  promise: Promise<any>,
-  expectedStatus: number,
-  context: string,
-) {
-  try {
-    await promise;
-    throw new Error(
-      `ОЖИДАЛАСЬ ОШИБКА ${expectedStatus}, НО ЗАПРОС ПРОШЕЛ УСПЕШНО! (${context})`,
-    );
-  } catch (error: any) {
-    if (error.response && error.response.status === expectedStatus) {
-      logSuccess(
-        `Правильно отловлена ошибка ${expectedStatus} -> ${context}: ${error.response.data?.message || JSON.stringify(error.response.data)}`,
-      );
-    } else {
-      throw error;
-    }
-  }
-}
-
-async function runPedanticTests() {
-  const runId = Math.random().toString(36).substring(7);
-  const password = "HardPassword!123";
-
-  const users = {
-    mentor: {
-      username: `mentor_${runId}`,
-      name: "Гендальф",
-      lastName: "Белый",
-      role: Role.MENTOR,
-    },
-    hr: {
-      username: `hr_${runId}`,
-      name: "Ольга",
-      lastName: "Хант",
-      role: Role.HR,
-    },
-    noobStudent: {
-      username: `noob_${runId}`,
-      name: "Вася",
-      lastName: "Пупкин",
-      role: Role.STUDENT,
-    },
-    proStudent: {
-      username: `pro_${runId}`,
-      name: "Джон",
-      lastName: "Кармак",
-      role: Role.STUDENT,
-    },
-  };
-
-  try {
-    logStep("0. ИНИЦИАЛИЗАЦИЯ: ПРОВЕРКА CORS И 405 (То, что ломалось!)");
-    logInfo("Делаем запрос GET /api/articles без авторизации...");
-    const initialArticles = await articleService.getAll();
-    logSuccess(
-      `GET /api/articles отработал успешно! Статей в базе: ${initialArticles.length}. 405 ошибка побеждена! 🎉`,
-    );
-
-    logStep("1. ИНИЦИАЛИЗАЦИЯ И РЕГИСТРАЦИЯ (AuthService)");
-    for (const [key, user] of Object.entries(users)) {
-      await authService.signup({ ...user, password });
-      logSuccess(`Зарегистрирован ${key}: ${user.role} (${user.username})`);
-    }
-
-    logStep("2. СОЗДАНИЕ СТАТЬИ И ФАЙЛОВ (Article & File Service)");
-    await authService.login({ username: users.mentor.username, password });
-
-    const dummyContent = new Blob(["# Hello Java"], { type: "text/markdown" });
-    const dummyFile = new File([dummyContent], "guide.md", {
-      type: "text/markdown",
-    });
-
-    const article = await articleService.createWithFile(
-      {
-        title: "Гайд по Java Basics",
-        about: "Для новичков",
-        format: ArticleFormat.MD,
-      },
-      dummyFile,
-    );
-    logSuccess(`Статья создана! ID: ${article.id}, Link: ${article.link}`);
-
-    // Проверяем получение одной статьи (тоже могло отваливаться)
-    const fetchedArticle = await articleService.get(article.id);
-    logSuccess(
-      `GET /api/articles/${article.id} работает. Название: ${fetchedArticle.title}`,
-    );
-
-    logStep("3. СОЗДАНИЕ ЗАДАЧИ МЕНТОРОМ (TaskService)");
-    const task = await taskService.createTask({
-      title: "Написать Spring Boot CRUD",
-      about: "Сделай контроллеры и сервисы",
-      githubLink: "https://github.com/test/repo",
-      skillName: "Java",
-    });
-    const globalTaskId = task.id;
-    logSuccess(`Задача создана! ID: ${globalTaskId}, Требуемый навык: Java`);
-
-    logStep("4. ПРОВЕРКА МЕХАНИКИ #1: ЖЕСТКАЯ БЛОКИРОВКА БЕЗ ПЕРКОВ");
-    await authService.login({ username: users.noobStudent.username, password });
-
-    logInfo("Пытаемся отправить решение без открытого перка 'java-basics'...");
-    await expectError(
-      taskService.submitSolution(globalTaskId, { commitHash: "commit-111" }),
-      400,
-      "Запрет на решение без базового перка",
-    );
-
-    logInfo("Открываем базовый перк...");
-    await skillService.unlockPerk("java-basics");
-    const noobSubmit = await taskService.submitSolution(globalTaskId, {
-      commitHash: "commit-111",
-    });
-    const noobSolutionId = noobSubmit.solutionId;
-    logSuccess(
-      "Решение Noob-студента успешно отправлено после прокачки перка!",
-    );
-
-    logStep("5. ПРОВЕРКА МЕХАНИКИ #2: ДЕРЕВО НАВЫКОВ И ЗАВИСИМОСТИ");
-    const proLogin = await authService.login({
-      username: users.proStudent.username,
-      password,
-    });
-
-    await skillService.unlockPerk("java-basics");
-    await skillService.unlockPerk("java-exp"); // Даст +10% EXP
-
-    const proSubmit = await taskService.submitSolution(globalTaskId, {
-      commitHash: "commit-999",
-    });
-    const proSolutionId = proSubmit.solutionId;
-    logSuccess(
-      "Решение Pro-студента отправлено (у него есть перк на +10% EXP).",
-    );
-
-    logStep("6. ПРОВЕРКА ЗАДАНИЙ И БОНУСНЫХ МНОЖИТЕЛЕЙ (Role.MENTOR)");
-    await authService.login({ username: users.mentor.username, password });
-
-    const reviewNoob = await taskService.reviewSolution(noobSolutionId, {
-      isApproved: true,
-      rating: 100,
-    });
-    logNerd(
-      `Оценено решение Noob. Назначено: 100. Получено: ${reviewNoob.receivedRating} XP.`,
-    );
-    if (reviewNoob.receivedRating !== 100)
-      throw new Error("Математика сломалась для Noob!");
-
-    const reviewPro = await taskService.reviewSolution(proSolutionId, {
-      isApproved: true,
-      rating: 100,
-    });
-    logNerd(
-      `Оценено решение Pro. Назначено: 100. Получено: ${reviewPro.receivedRating} XP. (Сработал перк java-exp!)`,
-    );
-    if (reviewPro.receivedRating !== 110)
-      throw new Error("Бонус от перка не сработал!");
-
-    logStep("7. ТОТАЛЬНАЯ ПРОВЕРКА ЛИДЕРБОРДА (GET /api/hr/leaderboard)");
-    await authService.login({ username: users.noobStudent.username, password });
-
-    const leaderboardGeneral = await hrService.getLeaderboard();
-    logSuccess(
-      `Общий лидерборд загружен! Участников: ${leaderboardGeneral.length}`,
-    );
-    console.table(
-      leaderboardGeneral
-        .filter((u) => u.username.includes(runId))
-        .map((u) => ({
-          User: u.username,
-          TotalXP: u.totalRate,
-        })),
-    );
-
-    logInfo("Проверяем лидерборд ПО КОНКРЕТНОМУ НАВЫКУ (Java)...");
-    const leaderboardJava = await hrService.getLeaderboard("Java");
-    logSuccess(
-      `Лидерборд по Java загружен! Участников: ${leaderboardJava.length}`,
-    );
-    console.table(
-      leaderboardJava
-        .filter((u) => u.username.includes(runId))
-        .map((u) => ({
-          User: u.username,
-          JavaXP: u.skillPoints,
-        })),
-    );
-
-    logStep("🎉 ФИНАЛ: ТЕПЕРЬ ТОЧНО РАБОТАЕТ ВООБЩЕ ВСЁ!");
-  } catch (error: any) {
-    console.error(`\n❌ ТЕСТ УПАЛ С ОШИБКОЙ!`);
-    console.error("Детали:", error.response?.data || error.message);
-  }
-}
-
-runPedanticTests();
-
-
-============================================================
-
-
-File: ./frontend/api/task-service.ts
-import axios, { AxiosInstance } from "axios";
-import { authService } from "./auth-service";
-import {
-  TaskRequest,
-  Task,
-  SubmitSolutionRequest,
-  CompleteTask,
-  ReviewSolutionRequest,
-  TreeOfSkills,
-} from "./types";
-
-class TaskService {
-  private http: AxiosInstance;
-
-  constructor(baseURL: string = "http://localhost:8080/api/tasks") {
-    this.http = axios.create({
-      baseURL,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    this.http.interceptors.request.use((config) => {
-      const headers = authService.getAuthHeader();
-      if (headers.Authorization) {
-        config.headers.Authorization = headers.Authorization;
-      }
-      return config;
-    });
-  }
-
-  async createTask(data: TaskRequest): Promise<Task> {
-    const response = await this.http.post<Task>("", data);
-    return response.data;
-  }
-
-  async getAllTasks(): Promise<Task[]> {
-    const response = await this.http.get<Task[]>("");
-    return response.data;
-  }
-
-  async submitSolution(
-    taskId: number,
-    data: SubmitSolutionRequest,
-  ): Promise<CompleteTask> {
-    const response = await this.http.post<CompleteTask>(
-      `/${taskId}/submit`,
-      data,
-    );
-    return response.data;
-  }
-
-  async reviewSolution(
-    solutionId: number,
-    data: ReviewSolutionRequest,
-  ): Promise<CompleteTask> {
-    const response = await this.http.post<CompleteTask>(
-      `/solutions/${solutionId}/review`,
-      data,
-    );
-    return response.data;
-  }
-  async getTaskSolutions(taskId: number): Promise<CompleteTask[]> {
-    const response = await this.http.get<CompleteTask[]>(
-      `/${taskId}/solutions`,
-    );
-    return response.data;
-  }
-  async getMySkills(): Promise<TreeOfSkills> {
-    const response = await this.http.get<TreeOfSkills>("/skills/my");
-    return response.data;
-  }
-}
-
-export const taskService = new TaskService();
-
-
-============================================================
-
-
-File: ./frontend/api/article-service.ts
-// article-service.ts
-import axios, { AxiosInstance } from "axios";
-import { authService } from "./auth-service";
-import { fileService } from "./file-services"; // Импорт сервиса файлов
-import { ArticleRequest, Article } from "./types";
-
-class ArticleService {
-  private http: AxiosInstance;
-
-  constructor(baseURL: string = "http://localhost:8080/api/articles") {
-    this.http = axios.create({
-      baseURL,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    this.http.interceptors.request.use((config) => {
-      const headers = authService.getAuthHeader();
-      if (headers.Authorization) {
-        config.headers.Authorization = headers.Authorization;
-      }
-      return config;
-    });
-  }
-
-  /**
-   * ИСПРАВЛЕННЫЙ МЕТОД:
-   * 1. Сначала загружает файл на сервер.
-   * 2. Получает готовую ссылку.
-   * 3. Создает статью, подставляя эту ссылку в поле link.
-   */
-  async createWithFile(
-    data: Omit<ArticleRequest, "link">,
-    file: File,
-  ): Promise<Article> {
-    // Шаг 1: Загрузка файла
-    const uploadedFileUrl = await fileService.uploadFile(file);
-
-    // Шаг 2: Формирование запроса к БД статей
-    const finalData: ArticleRequest = {
-      ...data,
-      link: uploadedFileUrl, // Ссылка теперь указывает на наш сервер
-    };
-
-    // Шаг 3: Сохранение метаданных статьи
-    const response = await this.http.post<Article>("", finalData);
-    return response.data;
-  }
-
-  async getAll(): Promise<Article[]> {
-    const response = await this.http.get<Article[]>("");
-    return response.data;
-  }
-
-  async get(id: number): Promise<Article> {
-    const response = await this.http.get<Article>(`/${id}`);
-    return response.data;
-  }
-
-  async delete(id: number): Promise<{ message: string }> {
-    const response = await this.http.delete(`/${id}`);
-    return response.data;
-  }
-}
-
-export const articleService = new ArticleService();
-
-
-============================================================
-
-
-File: ./frontend/api/types.ts
-// types.ts
-
-export enum Role {
-  MENTOR = "MENTOR",
-  HR = "HR",
-  STUDENT = "STUDENT",
-}
-
-export interface UserShortInfo {
-  userId: number;
-  username: string;
-  name: string;
-  lastName: string;
-}
-
-export interface LeaderboardEntry {
-  userId: number;
-  username: string;
-  name: string;
-  lastName: string;
-  totalRate: number;
-  skillPoints: number | null;
-}
-
-export enum ArticleFormat {
-  MD = "MD",
-  PDF = "PDF",
-}
-
-export enum SolutionStatus {
-  PENDING = "PENDING",
-  APPROVED = "APPROVED",
-  REJECTED = "REJECTED",
-}
-
-// --- Auth Interfaces ---
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface SignUpRequest {
-  username: string;
-  password: string;
-  name: string;
-  lastName: string;
-  role: Role;
-}
-
-export interface JwtResponse {
-  token: string;
-  id: number;
-  username: string;
-  name: string; // ДОБАВЛЕНО
-  lastName: string; // ДОБАВЛЕНО
-  roles: string[];
-}
-
-// --- Task Interfaces ---
-export interface TaskRequest {
-  title: string;
-  about: string;
-  githubLink: string;
-  skillName: string;
-}
-
-export interface Task {
-  id: number;
-  title: string;
-  about: string;
-  githubLink: string;
-  skillName: string;
-  author: UserShortInfo;
-  isActive: boolean;
-}
-
-export interface SubmitSolutionRequest {
-  commitHash: string;
-}
-
-export interface ReviewSolutionRequest {
-  isApproved: boolean;
-  rating: number;
-}
-
-export interface CompleteTask {
-  solutionId: number;
-  task: Task;
-  user: UserShortInfo;
-  commitHash: string;
-  status: SolutionStatus;
-  receivedRating: number;
-}
-
-// --- Skills & Perks Interfaces ---
-export interface Perk {
-  id: string;
-  name: string;
-  short: string;
-  description: string;
-  isOpen: boolean;
-  parentIds: string[];
-}
-
-export interface TreeOfSkills {
-  userId: number;
-  rate: number;
-  skills: Record<string, number>;
-  unlockedPerks: string[];
-}
-
-// --- Article Interfaces ---
-export interface ArticleRequest {
-  title: string;
-  about: string;
-  format: ArticleFormat;
-  link: string;
-  previewPhotoLink?: string;
-}
-
-export interface Article extends ArticleRequest {
-  id: number;
-  author: string;
-  authorId: number;
-  starCount: number;
-}
-
-
-============================================================
-
-
-File: ./frontend/api/file-services.ts
-// file-services.ts
-import axios, { AxiosInstance } from "axios";
-import { authService } from "./auth-service";
-
-class FileService {
-  private http: AxiosInstance;
-
-  constructor(baseURL: string = "http://localhost:8080/api/files") {
-    this.http = axios.create({ baseURL });
-  }
-
-  // Метод загружает файл и возвращает строку (URL), которую прислал бэкенд
-  async uploadFile(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file); // Ключ "file" совпадает с @RequestParam("file") в Java
-
-    const headers = authService.getAuthHeader();
-
-    const response = await this.http.post<{ message: string; url: string }>(
-      "/upload",
-      formData,
-      {
-        headers: {
-          ...headers,
-          "Content-Type": "multipart/form-data",
-        },
-      },
-    );
-
-    return response.data.url; // Возвращает http://localhost:8080/uploads/uuid.md
-  }
-}
-
-export const fileService = new FileService();
-
-
-============================================================
-
-
-File: ./frontend/api/hr-service.ts
-// hr-service.ts
-import axios, { AxiosInstance } from "axios";
-import { authService } from "./auth-service";
-import { LeaderboardEntry, UserShortInfo } from "./types";
-
-class HrService {
-  private http: AxiosInstance;
-
-  constructor(baseURL: string = "http://localhost:8080/api/hr") {
-    this.http = axios.create({
-      baseURL,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    this.http.interceptors.request.use((config) => {
-      const headers = authService.getAuthHeader();
-      if (headers.Authorization) {
-        config.headers.Authorization = headers.Authorization;
-      }
-      return config;
-    });
-  }
-
-  async getLeaderboard(skill?: string): Promise<LeaderboardEntry[]> {
-    const response = await this.http.get<LeaderboardEntry[]>("/leaderboard", {
-      params: skill ? { skill } : {},
-    });
-    return response.data;
-  }
-
-  async addFavorite(studentId: number): Promise<{ message: string }> {
-    const response = await this.http.post<{ message: string }>(
-      `/favorites/${studentId}`,
-    );
-    return response.data;
-  }
-
-  async removeFavorite(studentId: number): Promise<{ message: string }> {
-    const response = await this.http.delete<{ message: string }>(
-      `/favorites/${studentId}`,
-    );
-    return response.data;
-  }
-
-  async getFavorites(): Promise<UserShortInfo[]> {
-    const response = await this.http.get<UserShortInfo[]>("/favorites");
-    return response.data;
-  }
-}
-
-export const hrService = new HrService();
-
-
-============================================================
-
-
-File: ./frontend/api/skill-service.ts
-// skill-service.ts
-
-import axios, { AxiosInstance } from "axios";
-import { authService } from "./auth-service";
-import { Perk, TreeOfSkills } from "./types"; // ДОБАВЛЕНО: импорт TreeOfSkills
-
-class SkillService {
-  private http: AxiosInstance;
-
-  constructor(baseURL: string = "http://localhost:8080/api/skills") {
-    this.http = axios.create({
-      baseURL,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    this.http.interceptors.request.use((config) => {
-      const headers = authService.getAuthHeader();
-      if (headers.Authorization) {
-        config.headers.Authorization = headers.Authorization;
-      }
-      return config;
-    });
-  }
-
-  async getAllPerks(): Promise<Perk[]> {
-    const response = await this.http.get<Perk[]>("/perks");
-    return response.data;
-  }
-
-  async unlockPerk(perkId: string): Promise<{ message: string }> {
-    const response = await this.http.post<{ message: string }>(
-      `/perks/${perkId}/unlock`,
-    );
-    return response.data;
-  }
-
-  // ДОБАВЛЕНО: Метод для получения статистики конкретного студента
-  async getUserSkills(userId: number): Promise<TreeOfSkills> {
-    const response = await this.http.get<TreeOfSkills>(`/user/${userId}`);
-    return response.data;
-  }
-}
-
-export const skillService = new SkillService();
-
-
-============================================================
-
-
-File: ./frontend/api/auth-service.ts
-import axios, { AxiosInstance } from "axios";
-import { LoginRequest, SignUpRequest, JwtResponse } from "./types";
-
-interface StoredUser {
-  id: number;
-  username: string;
-  name: string; // ДОБАВЛЕНО
-  lastName: string; // ДОБАВЛЕНО
-  roles: string[];
-}
-
-class AuthService {
-  private http: AxiosInstance;
-  private token: string | null = null;
-  private user: StoredUser | null = null;
-
-  constructor(baseURL: string = "/api/auth") {
-    this.http = axios.create({
-      baseURL,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (typeof window !== "undefined") {
-      const savedToken = localStorage.getItem("auth_token");
-      if (savedToken) {
-        this.setToken(savedToken);
-      }
-      const savedUser = localStorage.getItem("auth_user");
-      if (savedUser) {
-        this.user = JSON.parse(savedUser);
-      }
-    }
-  }
-
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== "undefined") {
-      localStorage.setItem("auth_token", token);
-    }
-    this.http.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  }
-
-  clearToken() {
-    this.token = null;
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token");
-    }
-    delete this.http.defaults.headers.common["Authorization"];
-  }
-
-  setUser(user: StoredUser) {
-    this.user = user;
-    if (typeof window !== "undefined") {
-      localStorage.setItem("auth_user", JSON.stringify(user));
-    }
-  }
-
-  clearUser() {
-    this.user = null;
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_user");
-    }
-  }
-
-  logout() {
-    this.clearToken();
-    this.clearUser();
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.token;
-  }
-
-  getCurrentUser(): StoredUser | null {
-    return this.user;
-  }
-
-  async signup(data: SignUpRequest): Promise<string> {
-    const response = await this.http.post("/signup", data);
-    return response.data;
-  }
-
-  async login(data: LoginRequest): Promise<JwtResponse> {
-    const response = await this.http.post<JwtResponse>("/login", data);
-    this.setToken(response.data.token);
-    this.setUser({
-      id: response.data.id,
-      username: response.data.username,
-      name: response.data.name, // СОХРАНЯЕМ ИМЯ
-      lastName: response.data.lastName, // СОХРАНЯЕМ ФАМИЛИЮ
-      roles: response.data.roles,
-    });
-    return response.data;
-  }
-
-  getAuthHeader() {
-    return this.token ? { Authorization: `Bearer ${this.token}` } : {};
-  }
-}
-
-export const authService = new AuthService();
-
-if (typeof window !== "undefined") {
-  (window as any).auth = authService;
-}
-
 
 ============================================================
 
