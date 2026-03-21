@@ -57,8 +57,8 @@ export const nodes: Node[] = [
         "short": "PE",
         "description": "Даёт +10% к опыту за выполнение задач по Python",
         "isOpen": false,
-        "distance": 0.2,
-        "angle": 2.8,
+        "distance": 0.3,
+        "angle": 2.5,
         "parentIds": ["python-basics"]
     },
     {
@@ -97,7 +97,7 @@ export const nodes: Node[] = [
         "short": "JSR",
         "description": "Даёт +10% к звёздам репутации за выполнение задач по JavaScript",
         "isOpen": false,
-        "distance": 0.3,
+        "distance": 0.4,
         "angle": -2.9,
         "parentIds": ["js-exp"]
     },

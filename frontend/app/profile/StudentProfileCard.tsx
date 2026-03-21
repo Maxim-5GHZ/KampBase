@@ -1,111 +1,182 @@
-import { User, Star, Award } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { User, Star, Award, Newspaper, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/app/utils/auth-service";
+import { taskService } from "@/app/utils/task-service";
+import { skillService } from "@/app/utils/skill-service";
+
+type Achievement = {
+  id: string;
+  name: string;
+  short: string;
+};
 
 type StudentData = {
-    firstName: string;
-    lastName: string;
-    university: string;
-    stars: number;
-    level: number;
-    xp: number;
-    maxXp: number;
-    achievements: {
-        id: string;
-        name: string;
-    }[];
+  firstName: string;
+  lastName: string;
+  university: string;
+  stars: number;
+  level: number;
+  xp: number;
+  maxXp: number;
+  achievements: Achievement[];
 };
 
 export default function StudentProfileCard() {
-    // Заглушка
-    const studentData: StudentData = {
-        firstName: "Иван",
-        lastName: "Иванович",
-        university: "КФ МГТУ им. Н.Э. Баумана",
-        stars: 1250,
-        level: 15,
-        xp: 2565,
-        maxXp: 8600,
-        achievements: [
-        { id: "1", name: "Достижение 1" },
-        { id: "2", name: "Достижение 2" },
-        { id: "3", name: "Достижение 3" },
-        { id: "4", name: "Достижение 4" },
-        ],
+  const router = useRouter();
+  const [studentData, setStudentData] = useState<StudentData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const user = authService.getCurrentUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      try {
+        // Грузим очки навыков и список перков
+        const [skillsTree, allPerks] = await Promise.all([
+          taskService.getMySkills(),
+          skillService.getAllPerks(),
+        ]);
+
+        const rate = skillsTree.rate || 0;
+
+        // Простая логика уровней: каждые 1000 очков = 1 уровень
+        const level = Math.floor(rate / 1000) + 1;
+        const xp = rate % 1000;
+        const maxXp = 1000;
+
+        // Мапим открытые перки в красивые достижения
+        const unlocked = skillsTree.unlockedPerks || [];
+        const achievements = unlocked.map((perkId) => {
+          const perk = allPerks.find((p) => p.id === perkId);
+          return {
+            id: perkId,
+            name: perk?.name || perkId,
+            short: perk?.short || "Д",
+          };
+        });
+
+        setStudentData({
+          firstName: user.name || "Студент",
+          lastName: user.lastName || "",
+          university: "КФ МГТУ им. Н.Э. Баумана",
+          stars: rate, // Общий рейт = звезды
+          level,
+          xp,
+          maxXp,
+          achievements,
+        });
+      } catch (error) {
+        console.error("Ошибка загрузки профиля студента:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const progressPercent = (studentData.xp / studentData.maxXp) * 100;
+    loadData();
+  }, [router]);
 
+  const handleLogout = () => {
+    authService.logout();
+    router.push("/login");
+  };
+
+  if (loading || !studentData) {
     return (
-        <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8">
-        {/* Шапка */}
-        <div className="mt-8 md:mt-16">
-            {/* Аватарка */}
-            <div className="flex justify-center mb-4">
-            <User size={120} className="text-custom-accent" />
-            </div>
-
-            {/* Имя и отчество */}
-            <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
-            {studentData.firstName} {studentData.lastName}
-            </h2>
-
-            {/* Университет */}
-            <p className="text-center text-custom-secondary mb-4">
-            {studentData.university}
-            </p>
-
-            {/* Строка со звёздами и уровнем */}
-            <div className="flex justify-center gap-6 mb-4">
-            <div className="flex items-center gap-2">
-                <Star size={20} className="text-custom-accent" />
-                <span className="text-custom-main">{studentData.stars}</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <Award size={20} className="text-custom-accent" />
-                <span className="text-custom-main">{studentData.level}</span>
-            </div>
-            </div>
-
-            {/* Прогресс-бар */}
-            <div className="w-full max-w-xs mx-auto mb-2">
-                <div className="w-full h-4 bg-custom-secondary rounded-full overflow-hidden">
-                    <div
-                    className="h-full bg-custom-accent rounded-full"
-                    style={{ width: `${progressPercent}%` }}
-                    />
-                </div>
-            </div>
-
-            {/* Текст XP */}
-            <p className="text-center text-custom-secondary text-sm">
-            {studentData.xp} / {studentData.maxXp}
-            </p>
-        </div>
-
-        {/* Блок достижений */}
-        <div className="flex flex-col items-center w-full mb-8 md:mb-16">
-            <h3 className="text-2xl font-semibold text-custom-main mb-4">
-            Достижения
-            </h3>
-
-            {/* Сетка достижений */}
-            <div className="flex flex-wrap justify-center gap-6 mb-6">
-            {studentData.achievements.map((ach) => (
-                <div key={ach.id} className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full bg-custom-accent flex items-center justify-center text-white text-2xl font-bold mb-2">
-                    Д
-                </div>
-                <span className="text-custom-main text-sm text-center">
-                    {ach.name}
-                </span>
-                </div>
-            ))}
-            </div>
-
-            {/* Кнопка "Все достижения..." */}
-            <button className="btn btn-secondary w-3/4 md:w-1/2 rounded-button">
-            Все достижения...
-            </button>
-        </div>
-        </div>
+      <div className="flex flex-col items-center p-8 rounded-4xl bg-custom-bg-secondary h-full justify-center">
+        <span className="loading loading-spinner loading-lg text-custom-accent"></span>
+      </div>
     );
+  }
+
+  const progressPercent = (studentData.xp / studentData.maxXp) * 100;
+
+  return (
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8">
+      <div className="mt-4">
+        <div className="flex justify-center mb-4">
+          <User size={120} className="text-custom-accent" />
+        </div>
+
+        <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
+          {studentData.firstName} {studentData.lastName}
+        </h2>
+
+        <p className="text-center text-custom-secondary mb-4">
+          {studentData.university}
+        </p>
+
+        <div className="flex justify-center gap-6 mb-4">
+          <div className="flex items-center gap-2" title="Общий рейтинг">
+            <Star size={20} className="text-custom-accent" />
+            <span className="text-custom-main">{studentData.stars}</span>
+          </div>
+          <div className="flex items-center gap-2" title="Уровень">
+            <Award size={20} className="text-custom-accent" />
+            <span className="text-custom-main">{studentData.level}</span>
+          </div>
+        </div>
+
+        <div className="w-full max-w-xs mx-auto mb-2">
+          <div className="w-full h-4 bg-custom-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-custom-accent rounded-full transition-all duration-1000"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+
+        <p className="text-center text-custom-secondary text-sm">
+          {studentData.xp} / {studentData.maxXp} XP
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center w-full">
+        <h3 className="text-2xl font-semibold text-custom-main mb-4">
+          Открытые навыки
+        </h3>
+
+        <div className="flex flex-wrap justify-center gap-6 mb-6">
+          {studentData.achievements.length > 0 ? (
+            studentData.achievements.map((ach) => (
+              <div key={ach.id} className="flex flex-col items-center w-20">
+                <div className="w-14 h-14 rounded-full bg-custom-accent flex items-center justify-center text-white text-xl font-bold mb-2 shadow-lg">
+                  {ach.short}
+                </div>
+                <span className="text-custom-main text-xs text-center leading-tight">
+                  {ach.name}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className="text-custom-secondary text-sm">
+              Пока нет открытых навыков
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={() => router.push("/wiki")}
+          className="btn btn-primary w-3/4 md:w-1/2 rounded-button"
+        >
+          <Newspaper size={18} />
+          Ваши статьи
+        </button>
+      </div>
+
+      <button
+        onClick={handleLogout}
+        className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
+      >
+        <LogOut size={18} />
+        Выйти
+      </button>
+    </div>
+  );
 }

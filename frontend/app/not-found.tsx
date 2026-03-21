@@ -1,4 +1,3 @@
-// app/not-found.tsx
 import Link from 'next/link';
 import { Compass, TreeDeciduous, Code, ArrowLeft, Award } from 'lucide-react';
 
