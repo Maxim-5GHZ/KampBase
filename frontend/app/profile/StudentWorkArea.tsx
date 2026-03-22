@@ -29,8 +29,8 @@ export default function WorkArea({ nodes, skillPoints = 0 }: WorkAreaProps) {
         />
       </div>
       <p className="text-center text-custom-secondary text-sm mt-4">
-        Удерживайте левую кнопку мыши или используйте свайп, чтобы перемещаться
-        по карте навыков
+        Удерживайте левую кнопку мыши для перемещения, крутите колёсико для
+        изменения масштаба
       </p>
     </div>
   );
