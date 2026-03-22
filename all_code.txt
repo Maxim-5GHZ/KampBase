@@ -4751,20 +4751,23 @@ export default TaskCard;
 
 
 File: ./frontend/app/profile/_tree/utils/position.ts
-import { Node } from '../types';
+// File: ./frontend/app/profile/_tree/utils/position.ts
+import { Node } from "../types";
 
 export const getNodePosition = (node: Node) => {
-    if (node.id === 'root') {
-        return { x: 0.5, y: 0.5 };
-    }
-    const x = 0.5 + node.distance * Math.cos(node.angle);
-    const y = 0.5 + node.distance * Math.sin(node.angle);
-    
-    return {
-        x: Math.min(1, Math.max(0, x)),
-        y: Math.min(1, Math.max(0, y)),
-    };
+  if (node.id === "root") {
+    return { x: 0.5, y: 0.5 };
+  }
+  const x = 0.5 + node.distance * Math.cos(node.angle);
+  const y = 0.5 + node.distance * Math.sin(node.angle);
+
+  // Больше не обрезаем координаты. Позволяем им занимать весь холст
+  return {
+    x: x,
+    y: y,
+  };
 };
+
 
 ============================================================
 
@@ -4777,229 +4780,298 @@ export type SkillNode = Node; // содержит distance, angle, parentIds и 
 
 
 File: ./frontend/app/profile/_tree/SkillTree.tsx
-import React from 'react';
-import { SkillNode } from './skill';
-import { RootNode } from './components/RootNode';
-import { SkillNodeComponent } from './components/SkillNode';
-import { TreeEdges } from './components/TreeEdges';
+// File: ./frontend/app/profile/_tree/SkillTree.tsx
+import React, { useRef, useState, useEffect } from "react";
+import { SkillNode } from "./skill";
+import { RootNode } from "./components/RootNode";
+import { SkillNodeComponent } from "./components/SkillNode";
+import { TreeEdges } from "./components/TreeEdges";
 
 interface SkillTreeProps {
-    nodes: SkillNode[];
-    selectedId?: string | null;
-    onNodeClick?: (id: string) => void;
-    skillPoints?: number;
+  nodes: SkillNode[];
+  selectedId?: string | null;
+  onNodeClick?: (id: string) => void;
+  skillPoints?: number;
 }
 
 export const SkillTree: React.FC<SkillTreeProps> = ({
-    nodes,
-    selectedId,
-    onNodeClick,
-    skillPoints = 0,
+  nodes,
+  selectedId,
+  onNodeClick,
+  skillPoints = 0,
 }) => {
-    const rootNode = nodes.find(node => node.parentIds.length === 0);
-    const otherNodes = nodes.filter(node => node.parentIds.length > 0);
+  const rootNode = nodes.find((node) => node.parentIds.length === 0);
+  const otherNodes = nodes.filter((node) => node.parentIds.length > 0);
 
-    const edges = nodes.flatMap(node =>
-        node.parentIds.map(parentId => ({ from: parentId, to: node.id }))
-    );
+  const edges = nodes.flatMap((node) =>
+    node.parentIds.map((parentId) => ({ from: parentId, to: node.id })),
+  );
 
-    const viewBoxWidth = 1000;
-    const viewBoxHeight = 800;
+  const viewBoxWidth = 1400;
+  const viewBoxHeight = 1400;
 
-    return (
-        <div className="relative w-full -mt-40 mx-auto" style={{ paddingBottom: '80%' }}>
-            <TreeEdges
-                edges={edges}
-                nodes={nodes}
-                selectedId={selectedId}
-                viewBoxWidth={viewBoxWidth}
-                viewBoxHeight={viewBoxHeight}
-            />
-            <div className="absolute inset-0 w-full h-full">
-                {rootNode && (
-                    <RootNode
-                        node={rootNode}
-                        skillPoints={skillPoints}
-                        isSelected={selectedId === rootNode.id}
-                        onClick={() => onNodeClick?.(rootNode.id)}
-                    />
-                )}
-                {otherNodes.map(node => (
-                    <SkillNodeComponent
-                        key={node.id}
-                        node={node}
-                        isSelected={selectedId === node.id}
-                        onClick={() => onNodeClick?.(node.id)}
-                    />
-                ))}
-            </div>
+  // --- Логика Drag-to-Scroll (Перетаскивание мышкой) ---
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [startY, setStartY] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+
+  // Центрируем камеру на середине карты при первой загрузке
+  useEffect(() => {
+    if (containerRef.current) {
+      const container = containerRef.current;
+      container.scrollLeft =
+        (container.scrollWidth - container.clientWidth) / 2;
+      container.scrollTop =
+        (container.scrollHeight - container.clientHeight) / 2;
+    }
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - containerRef.current.offsetLeft);
+    setStartY(e.pageY - containerRef.current.offsetTop);
+    setScrollLeft(containerRef.current.scrollLeft);
+    setScrollTop(containerRef.current.scrollTop);
+  };
+
+  const handleMouseLeave = () => setIsDragging(false);
+  const handleMouseUp = () => setIsDragging(false);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !containerRef.current) return;
+    e.preventDefault(); // Предотвращаем выделение текста при перетаскивании
+    const x = e.pageX - containerRef.current.offsetLeft;
+    const y = e.pageY - containerRef.current.offsetTop;
+    const walkX = x - startX;
+    const walkY = y - startY;
+    containerRef.current.scrollLeft = scrollLeft - walkX;
+    containerRef.current.scrollTop = scrollTop - walkY;
+  };
+
+  return (
+    // Внешний контейнер, который обрезает края и обрабатывает мышь/скролл
+    <div
+      ref={containerRef}
+      className={`w-full h-full overflow-auto select-none scrollbar-hide ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      onMouseDown={handleMouseDown}
+      onMouseLeave={handleMouseLeave}
+      onMouseUp={handleMouseUp}
+      onMouseMove={handleMouseMove}
+    >
+      {/* Огромный внутренний холст, по которому мы ползаем */}
+      <div className="relative mx-auto w-[1400px] h-[1400px] shrink-0 pointer-events-none">
+        {/* Линии. Pointer-events-none чтобы не мешали кликам */}
+        <div className="absolute inset-0 z-0">
+          <TreeEdges
+            edges={edges}
+            nodes={nodes}
+            selectedId={selectedId}
+            viewBoxWidth={viewBoxWidth}
+            viewBoxHeight={viewBoxHeight}
+          />
         </div>
-    );
+
+        {/* Узлы. Включаем pointer-events-auto, чтобы по ним можно было кликать и наводить мышку */}
+        <div className="absolute inset-0 w-full h-full pointer-events-auto">
+          {rootNode && (
+            <RootNode
+              node={rootNode}
+              skillPoints={skillPoints}
+              isSelected={selectedId === rootNode.id}
+              onClick={() => onNodeClick?.(rootNode.id)}
+            />
+          )}
+          {otherNodes.map((node) => (
+            <SkillNodeComponent
+              key={node.id}
+              node={node}
+              isSelected={selectedId === node.id}
+              onClick={() => onNodeClick?.(node.id)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 };
+
 
 ============================================================
 
 
 File: ./frontend/app/profile/_tree/data.ts
-import { Node } from './types';
+// File: ./frontend/app/profile/_tree/data.ts
+import { Node } from "./types";
 
 export const nodes: Node[] = [
-    {
-        id: "root",
-        name: "Корень",
-        short: "",
-        description: "",
-        isOpen: true,
-        distance: 0,
-        angle: 0,
-        parentIds: [],
-    },
-    {
-        "id": "java-basics",
-        "name": "Основы Java",
-        "short": "J",
-        "description": "Открывает доступ к задачам по Java",
-        "isOpen": true,
-        "distance": 0.2,
-        "angle": 1.3,
-        "parentIds": ["root"]
-    },
-    {
-        "id": "java-exp",
-        "name": "Java: Опыт",
-        "short": "JE",
-        "description": "Даёт +10% к опыту за выполнение задач по Java",
-        "isOpen": false,
-        "distance": 0.2,
-        "angle": 0.4,
-        "parentIds": ["java-basics"]
-    },
-    {
-        "id": "java-rep",
-        "name": "Java: Репутация",
-        "short": "JR",
-        "description": "Даёт +10% к звёздам репутации за выполнение задач по Java",
-        "isOpen": false,
-        "distance": 0.3,
-        "angle": 0.1,
-        "parentIds": ["java-exp"]
-    },
-    {
-        "id": "python-basics",
-        "name": "Основы Python",
-        "short": "P",
-        "description": "Открывает доступ к задачам по Python",
-        "isOpen": true,
-        "distance": 0.2,
-        "angle": 2.2,
-        "parentIds": ["root"]
-    },
-    {
-        "id": "python-exp",
-        "name": "Python: Опыт",
-        "short": "PE",
-        "description": "Даёт +10% к опыту за выполнение задач по Python",
-        "isOpen": false,
-        "distance": 0.3,
-        "angle": 2.5,
-        "parentIds": ["python-basics"]
-    },
-    {
-        "id": "python-rep",
-        "name": "Python: Репутация",
-        "short": "PR",
-        "description": "Даёт +10% к звёздам репутации за выполнение задач по Python",
-        "isOpen": false,
-        "distance": 0.3,
-        "angle": 3,
-        "parentIds": ["python-exp"]
-    },
-    {
-        "id": "js-basics",
-        "name": "Основы JavaScript",
-        "short": "JS",
-        "description": "Открывает доступ к задачам по JavaScript",
-        "isOpen": true,
-        "distance": 0.15,
-        "angle": -2.3,
-        "parentIds": ["root"]
-    },
-    {
-        "id": "js-exp",
-        "name": "JavaScript: Опыт",
-        "short": "JSE",
-        "description": "Даёт +10% к опыту за выполнение задач по JavaScript",
-        "isOpen": false,
-        "distance": 0.3,
-        "angle": -2.4,
-        "parentIds": ["js-basics"]
-    },
-    {
-        "id": "js-rep",
-        "name": "JavaScript: Репутация",
-        "short": "JSR",
-        "description": "Даёт +10% к звёздам репутации за выполнение задач по JavaScript",
-        "isOpen": false,
-        "distance": 0.4,
-        "angle": -2.9,
-        "parentIds": ["js-exp"]
-    },
-    {
-        "id": "sql-basics",
-        "name": "Основы SQL",
-        "short": "SQL",
-        "description": "Открывает доступ к задачам по SQL",
-        "isOpen": true,
-        "distance": 0.15,
-        "angle": -0.4,
-        "parentIds": ["root"]
-    },
-    {
-        "id": "sql-exp",
-        "name": "SQL: Опыт",
-        "short": "SQLE",
-        "description": "Даёт +10% к опыту за выполнение задач по SQL",
-        "isOpen": false,
-        "distance": 0.3,
-        "angle": -0.4,
-        "parentIds": ["sql-basics"]
-    },
-    {
-        "id": "sql-rep",
-        "name": "SQL: Репутация",
-        "short": "SQLR",
-        "description": "Даёт +10% к звёздам репутации за выполнение задач по SQL",
-        "isOpen": false,
-        "distance": 0.4,
-        "angle": -0.3,
-        "parentIds": ["sql-exp"]
-    },
-    {
-        "id": "db-design",
-        "name": "Проектирование БД",
-        "short": "DBD",
-        "description": "Открывает доступ к задачам по проектированию баз данных",
-        "isOpen": false,
-        "distance": 0.2,
-        "angle": -1.2,
-        "parentIds": ["sql-basics"]
-    },
-    {
-        "id": "db-master",
-        "name": "Мастер БД",
-        "short": "DBM",
-        "description": "Даёт +15% к опыту за задачи по проектированию БД",
-        "isOpen": false,
-        "distance": 0.3,
-        "angle": -1.8,
-        "parentIds": ["db-design"]
-    }
+  {
+    id: "root",
+    name: "Корень",
+    short: "",
+    description: "",
+    isOpen: true,
+    distance: 0,
+    angle: 0,
+    parentIds: [],
+  },
+  // --- Ветка JAVA (Вниз-вправо) ---
+  {
+    id: "java-basics",
+    name: "Основы Java",
+    short: "J",
+    description: "Открывает доступ к задачам по Java",
+    isOpen: true,
+    distance: 0.22, // Было 0.2
+    angle: 0.8,
+    parentIds: ["root"],
+  },
+  {
+    id: "java-exp",
+    name: "Java: Опыт",
+    short: "JE",
+    description: "Даёт +10% к опыту за выполнение задач по Java",
+    isOpen: false,
+    distance: 0.35, // Было 0.2
+    angle: 0.8,
+    parentIds: ["java-basics"],
+  },
+  {
+    id: "java-rep",
+    name: "Java: Репутация",
+    short: "JR",
+    description: "Даёт +10% к звёздам репутации за выполнение задач по Java",
+    isOpen: false,
+    distance: 0.48, // Было 0.3
+    angle: 0.8,
+    parentIds: ["java-exp"],
+  },
 
+  // --- Ветка PYTHON (Вниз-влево) ---
+  {
+    id: "python-basics",
+    name: "Основы Python",
+    short: "P",
+    description: "Открывает доступ к задачам по Python",
+    isOpen: true,
+    distance: 0.22,
+    angle: 2.3,
+    parentIds: ["root"],
+  },
+  {
+    id: "python-exp",
+    name: "Python: Опыт",
+    short: "PE",
+    description: "Даёт +10% к опыту за выполнение задач по Python",
+    isOpen: false,
+    distance: 0.35,
+    angle: 2.3,
+    parentIds: ["python-basics"],
+  },
+  {
+    id: "python-rep",
+    name: "Python: Репутация",
+    short: "PR",
+    description: "Даёт +10% к звёздам репутации за выполнение задач по Python",
+    isOpen: false,
+    distance: 0.48,
+    angle: 2.3,
+    parentIds: ["python-exp"],
+  },
+
+  // --- Ветка JAVASCRIPT (Вверх-влево) ---
+  {
+    id: "js-basics",
+    name: "Основы JavaScript",
+    short: "JS",
+    description: "Открывает доступ к задачам по JavaScript",
+    isOpen: true,
+    distance: 0.22,
+    angle: -2.3,
+    parentIds: ["root"],
+  },
+  {
+    id: "js-exp",
+    name: "JavaScript: Опыт",
+    short: "JSE",
+    description: "Даёт +10% к опыту за выполнение задач по JavaScript",
+    isOpen: false,
+    distance: 0.35,
+    angle: -2.3,
+    parentIds: ["js-basics"],
+  },
+  {
+    id: "js-rep",
+    name: "JavaScript: Репутация",
+    short: "JSR",
+    description:
+      "Даёт +10% к звёздам репутации за выполнение задач по JavaScript",
+    isOpen: false,
+    distance: 0.48,
+    angle: -2.3,
+    parentIds: ["js-exp"],
+  },
+
+  // --- Ветка SQL и БД (Вверх-вправо) ---
+  {
+    id: "sql-basics",
+    name: "Основы SQL",
+    short: "SQL",
+    description: "Открывает доступ к задачам по SQL",
+    isOpen: true,
+    distance: 0.2,
+    angle: -0.5,
+    parentIds: ["root"],
+  },
+  {
+    id: "sql-exp",
+    name: "SQL: Опыт",
+    short: "SQLE",
+    description: "Даёт +10% к опыту за выполнение задач по SQL",
+    isOpen: false,
+    distance: 0.33,
+    angle: -0.3,
+    parentIds: ["sql-basics"],
+  },
+  {
+    id: "sql-rep",
+    name: "SQL: Репутация",
+    short: "SQLR",
+    description: "Даёт +10% к звёздам репутации за выполнение задач по SQL",
+    isOpen: false,
+    distance: 0.46,
+    angle: -0.2,
+    parentIds: ["sql-exp"],
+  },
+  {
+    id: "db-design",
+    name: "Проектирование БД",
+    short: "DBD",
+    description: "Открывает доступ к задачам по проектированию баз данных",
+    isOpen: false,
+    distance: 0.33,
+    angle: -0.8,
+    parentIds: ["sql-basics"],
+  },
+  {
+    id: "db-master",
+    name: "Мастер БД",
+    short: "DBM",
+    description: "Даёт +15% к опыту за задачи по проектированию БД",
+    isOpen: false,
+    distance: 0.46,
+    angle: -0.9,
+    parentIds: ["db-design"],
+  },
 ];
 
 export const edges = nodes.flatMap((node) =>
-    node.parentIds.map((parentId) => ({ from: parentId, to: node.id }))
+  node.parentIds.map((parentId) => ({ from: parentId, to: node.id })),
 );
+
 
 ============================================================
 
@@ -5124,68 +5196,74 @@ export const RootNode: React.FC<RootNodeProps> = ({ node, skillPoints, isSelecte
 
 
 File: ./frontend/app/profile/_tree/components/SkillNode.tsx
-import React from 'react';
-import { SkillNode } from '../skill';
-import { getNodePosition } from '../utils/position';
+// File: ./frontend/app/profile/_tree/components/SkillNode.tsx
+import React from "react";
+import { SkillNode } from "../skill";
+import { getNodePosition } from "../utils/position";
 
 interface SkillNodeProps {
-    node: SkillNode;
-    onClick: (id: string) => void;
-    isSelected?: boolean;
+  node: SkillNode;
+  onClick: (id: string) => void;
+  isSelected?: boolean;
 }
 
-export const SkillNodeComponent: React.FC<SkillNodeProps> = ({ node, onClick, isSelected }) => {
-    const isOpen = node.isOpen;
-    const { x, y } = getNodePosition(node);
+export const SkillNodeComponent: React.FC<SkillNodeProps> = ({
+  node,
+  onClick,
+  isSelected,
+}) => {
+  const isOpen = node.isOpen;
+  const { x, y } = getNodePosition(node);
 
-    const squareClasses = `
-        w-16 h-16                    /* увеличенный размер на мобильных */
-        sm:w-14 sm:h-14              /* стандартный размер на планшетах/десктопе */
+  const squareClasses = `
+        w-16 h-16
+        sm:w-14 sm:h-14
         flex items-center justify-center 
         font-bold rounded-lg 
         bg-custom-secondary 
         cursor-pointer 
-        transition-all
-        active:scale-95              /* лёгкое сжатие при касании */
+        transition-all z-10
+        active:scale-95
         ${
-            isOpen
-                ? 'border-2 border-custom-accent text-custom-accent group-hover:shadow-[0_0_20px_2px_rgba(59,130,246,0.3)]'
-                : 'border-2 border-transparent text-custom-bg-main group-hover:shadow-[0_0_20px_2px_rgba(0,0,0,0.1)]'
+          isOpen
+            ? "border-2 border-custom-accent text-custom-accent shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+            : "border-2 border-transparent text-custom-bg-main shadow-sm"
         } 
-        ${isSelected ? 'ring-2 ring-white scale-110' : ''}
+        ${isSelected ? "ring-2 ring-white scale-110" : ""}
     `;
 
-    return (
-        <div
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-2 rounded-lg group"
-            style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
-        >
-            <div
-                className={`${squareClasses} ${node.isOpen ? 'group-hover:text-custom-main' : ''}`}
-                onClick={() => onClick(node.id)}
-            >
-                {node.short}
-            </div>
-            <span className={`
-                text-sm sm:text-base    /* чуть крупнее на мобильных */
-                font-medium mt-1 
-                group-hover:text-custom-main/80 
-                ${isOpen ? 'text-custom-main' : 'text-custom-main'}
-            `}>
-                {node.name}
-            </span>
-            {/* На мобильных описание можно скрыть, чтобы не загромождать интерфейс */}
-            <span className={`
-                hidden                  /* скрыто на мобильных по умолчанию */
-                sm:block                /* показываем на планшетах и выше */
-                text-xs 
-                ${isOpen ? 'text-custom-secondary' : 'text-custom-secondary'}
-            `}>
-                {node.description}
-            </span>
-        </div>
-    );
+  return (
+    <div
+      className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-2 rounded-lg group z-10 hover:z-50"
+      style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
+    >
+      <div
+        className={`${squareClasses} ${isOpen ? "hover:text-custom-main" : ""}`}
+        onClick={() => onClick(node.id)}
+      >
+        {node.short}
+      </div>
+
+      {/* Название навыка */}
+      <span
+        className={`
+                text-sm sm:text-base font-bold mt-2 text-center whitespace-nowrap bg-custom-bg-main/80 px-2 py-0.5 rounded-md backdrop-blur-sm
+                ${isOpen ? "text-custom-main" : "text-custom-secondary"}
+            `}
+      >
+        {node.name}
+      </span>
+
+      {/* ДОБАВЛЕНО: Описание теперь во всплывающем окне (Tooltip) при наведении */}
+      <div className="absolute top-full mt-1 w-56 p-3 bg-custom-bg-secondary border border-custom-secondary/20 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none text-center">
+        <span className="text-sm text-custom-secondary font-medium">
+          {node.description}
+        </span>
+      </div>
+    </div>
+  );
 };
+
 
 ============================================================
 
@@ -5460,23 +5538,24 @@ export default function WorkArea({ nodes, skillPoints = 0 }: WorkAreaProps) {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
   return (
-    <div className="p-4">
+    <div className="p-4 flex flex-col h-full">
       <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-semibold mb-4">
         Дерево навыков
       </h2>
 
-      {/* Контейнер с горизонтальным скроллом для мобильных устройств */}
-      <div className="w-full overflow-x-auto pb-8 scrollbar-hide">
-        {/* Ограничиваем минимальную ширину, чтобы узлы не наезжали друг на друга */}
-        <div className="min-w-[800px]">
-          <SkillTree
-            nodes={nodes}
-            skillPoints={skillPoints}
-            selectedId={selectedNode}
-            onNodeClick={setSelectedNode}
-          />
-        </div>
+      {/* Окно-иллюминатор для дерева (ограничиваем высоту, прячем края) */}
+      <div className="w-full h-[65vh] min-h-[500px] rounded-3xl overflow-hidden border border-custom-secondary/20 bg-custom-bg-main relative shadow-inner">
+        <SkillTree
+          nodes={nodes}
+          skillPoints={skillPoints}
+          selectedId={selectedNode}
+          onNodeClick={setSelectedNode}
+        />
       </div>
+      <p className="text-center text-custom-secondary text-sm mt-4">
+        Удерживайте левую кнопку мыши или используйте свайп, чтобы перемещаться
+        по карте навыков
+      </p>
     </div>
   );
 }
@@ -6102,9 +6181,10 @@ export default function StudentProfileCard() {
 
 
 File: ./frontend/app/leaderboard/LeaderboardRow.tsx
+// File: ./frontend/app/leaderboard/LeaderboardRow.tsx
 "use client";
 
-import { User, Mail, Github } from "lucide-react";
+import { User, Mail, Github, Network } from "lucide-react";
 
 interface LeaderboardRowProps {
   rank: number;
@@ -6116,6 +6196,7 @@ interface LeaderboardRowProps {
   university: string;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onViewTree: () => void; // ДОБАВЛЕНО: коллбек для открытия дерева
   email: string;
 }
 
@@ -6129,6 +6210,7 @@ const LeaderboardRow = ({
   university,
   isFavorite,
   onToggleFavorite,
+  onViewTree,
   email,
 }: LeaderboardRowProps) => {
   return (
@@ -6170,16 +6252,28 @@ const LeaderboardRow = ({
           {university}
         </div>
 
-        <button
-          onClick={onToggleFavorite}
-          className={`btn btn-primary rounded-button px-3 py-1 text-sm sm:text-base shadow-none w-36 shrink-0 ${
-            isFavorite
-              ? "bg-transparent border border-custom-accent text-custom-accent"
-              : ""
-          }`}
-        >
-          {isFavorite ? "Скрыть" : "Связаться"}
-        </button>
+        {/* Группа кнопок действий */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* ДОБАВЛЕНО: Зеленая кнопка просмотра дерева */}
+          <button
+            onClick={onViewTree}
+            className="btn bg-green-500 hover:bg-green-600 border-none text-white rounded-button px-3 py-1 shadow-none flex items-center justify-center gap-1"
+            title="Посмотреть дерево навыков"
+          >
+            <Network size={18} />
+          </button>
+
+          <button
+            onClick={onToggleFavorite}
+            className={`btn btn-primary rounded-button px-3 py-1 text-sm sm:text-base shadow-none w-32 ${
+              isFavorite
+                ? "bg-transparent border border-custom-accent text-custom-accent"
+                : ""
+            }`}
+          >
+            {isFavorite ? "Скрыть" : "Связаться"}
+          </button>
+        </div>
       </div>
 
       {isFavorite && (
@@ -6207,17 +6301,73 @@ export default LeaderboardRow;
 
 
 File: ./frontend/app/leaderboard/page.tsx
+// File: ./frontend/app/leaderboard/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import FilterPanel, { FilterCategory } from "../components/FilterPanel";
 import LeaderboardRow from "./LeaderboardRow";
 import { hrService } from "@/app/utils/hr-service";
 import { authService } from "@/app/utils/auth-service";
 import { LeaderboardEntry as ApiLeaderboardEntry } from "@/app/utils/types";
 
+// Импорты для отрисовки дерева навыков
+import { SkillTree } from "@/app/profile/_tree/SkillTree";
+import { nodes as baseNodes } from "@/app/profile/_tree/data";
+import { Node } from "@/app/profile/_tree/types";
+
+/**
+ * Логика "генератора" дерева:
+ * Проверяем очки по каждому направлению и открываем соответствующие узлы,
+ * чтобы дерево в модалке соответствовало цифрам в таблице.
+ */
+const generateStudentTree = (skills: Record<string, number> = {}): Node[] => {
+  return baseNodes.map((node) => {
+    let isOpen = false;
+
+    // Корень всегда открыт
+    if (node.id === "root") isOpen = true;
+
+    // Ветка JAVA
+    if (node.id.startsWith("java")) {
+      const pts = skills["Java"] || 0;
+      if (node.id === "java-basics" && pts > 0) isOpen = true;
+      if (node.id === "java-exp" && pts > 1000) isOpen = true;
+      if (node.id === "java-rep" && pts > 2500) isOpen = true;
+    }
+
+    // Ветка PYTHON
+    if (node.id.startsWith("python")) {
+      const pts = skills["Python"] || 0;
+      if (node.id === "python-basics" && pts > 0) isOpen = true;
+      if (node.id === "python-exp" && pts > 1000) isOpen = true;
+      if (node.id === "python-rep" && pts > 2500) isOpen = true;
+    }
+
+    // Ветка JAVASCRIPT
+    if (node.id.startsWith("js")) {
+      const pts = skills["JavaScript"] || 0;
+      if (node.id === "js-basics" && pts > 0) isOpen = true;
+      if (node.id === "js-exp" && pts > 1000) isOpen = true;
+      if (node.id === "js-rep" && pts > 2500) isOpen = true;
+    }
+
+    // Ветка SQL и ПРОЕКТИРОВАНИЕ БД
+    if (node.id.startsWith("sql") || node.id.startsWith("db")) {
+      const pts = skills["SQL"] || 0;
+      if (node.id === "sql-basics" && pts > 0) isOpen = true;
+      if (node.id === "sql-exp" && pts > 1200) isOpen = true;
+      if (node.id === "sql-rep" && pts > 2800) isOpen = true;
+      if (node.id === "db-design" && pts > 1800) isOpen = true;
+      if (node.id === "db-master" && pts > 3500) isOpen = true;
+    }
+
+    return { ...node, isOpen };
+  });
+};
+
 const LeaderboardPage = () => {
-  // Фильтр для боковой панели (используем ВУЗы из нашего мока)
   const [filterCategories, setFilterCategories] = useState<FilterCategory[]>([
     {
       name: "Университет",
@@ -6226,10 +6376,17 @@ const LeaderboardPage = () => {
     },
   ]);
 
-  const [sortBySkill, setSortBySkill] = useState<string>(""); // Состояние дропдауна сортировки
+  const [sortBySkill, setSortBySkill] = useState<string>("");
   const [entries, setEntries] = useState<ApiLeaderboardEntry[]>([]);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
+
+  // Состояние для открытия модального окна с деревом конкретного студента
+  const [selectedStudentTree, setSelectedStudentTree] = useState<{
+    name: string;
+    totalRate: number;
+    nodes: Node[];
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -6248,7 +6405,7 @@ const LeaderboardPage = () => {
       }
     };
     fetchData();
-  }, [sortBySkill]); // Перезапрашиваем данные при смене навыка сортировки
+  }, [sortBySkill]);
 
   const handleFilterChange = (newCategories: FilterCategory[]) => {
     setFilterCategories(newCategories);
@@ -6259,7 +6416,7 @@ const LeaderboardPage = () => {
     const isHr = currentUser?.roles.includes("ROLE_HR") ?? false;
 
     if (!isHr) {
-      alert("Только HR могут управлять избранным.");
+      alert("Только HR могут управлять списком избранного.");
       return;
     }
 
@@ -6281,7 +6438,16 @@ const LeaderboardPage = () => {
     }
   };
 
-  // Фильтруем данные по галочкам из левой панели (ВУЗ)
+  // Метод для открытия модалки с деревом
+  const handleViewTree = (entry: ApiLeaderboardEntry) => {
+    const customNodes = generateStudentTree(entry.skills || {});
+    setSelectedStudentTree({
+      name: `${entry.name} ${entry.lastName}`,
+      totalRate: entry.totalRate,
+      nodes: customNodes,
+    });
+  };
+
   const displayEntries = entries
     .map((entry, idx) => ({
       ...entry,
@@ -6298,77 +6464,131 @@ const LeaderboardPage = () => {
     });
 
   return (
-    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8 pb-12">
-      <div className="w-full lg:w-1/5 mb-4 lg:mb-0">
-        <FilterPanel
-          categories={filterCategories}
-          onFilterChange={handleFilterChange}
-        />
-      </div>
-
-      <div className="flex-1">
-        {/* Хедер с селектом для сортировки по навыкам */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <h1 className="text-2xl font-bold text-custom-main">Топ студентов</h1>
-          <select
-            className="select select-bordered bg-custom-bg-secondary text-custom-main border-custom-secondary/30"
-            value={sortBySkill}
-            onChange={(e) => setSortBySkill(e.target.value)}
-          >
-            <option value="">🏆 Сортировка: Общий рейтинг</option>
-            <option value="Java">☕ Java</option>
-            <option value="Python">🐍 Python</option>
-            <option value="JavaScript">🟨 JavaScript</option>
-            <option value="SQL">💾 SQL</option>
-          </select>
+    <>
+      <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8 pb-12">
+        <div className="w-full lg:w-1/5 mb-4 lg:mb-0">
+          <FilterPanel
+            categories={filterCategories}
+            onFilterChange={handleFilterChange}
+          />
         </div>
 
-        <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg overflow-x-auto min-h-[500px] relative">
-          {/* Спиннер загрузки поверх таблицы при смене фильтра */}
-          {loading && (
-            <div className="absolute inset-0 bg-custom-bg-secondary/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
-              <span className="loading loading-spinner loading-lg text-custom-accent"></span>
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium min-w-[750px]">
-            <div className="w-8 sm:w-10 text-center shrink-0">№</div>
-            <div className="flex-1 min-w-[200px]">Студент</div>
-            <div className="w-24 text-center shrink-0">Всего XP</div>
-            <div className="w-32 text-center shrink-0">
-              {sortBySkill ? `Очки: ${sortBySkill}` : "Топ навык"}
-            </div>
-            <div className="w-32 text-center shrink-0">ВУЗ</div>
-            <div className="w-36 text-center shrink-0">Действие</div>
+        <div className="flex-1">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <h1 className="text-2xl font-bold text-custom-main">
+              Топ студентов
+            </h1>
+            <select
+              className="select select-bordered bg-custom-bg-secondary text-custom-main border-custom-secondary/30"
+              value={sortBySkill}
+              onChange={(e) => setSortBySkill(e.target.value)}
+            >
+              <option value="">🏆 Сортировка: Общий рейтинг</option>
+              <option value="Java">☕ Java</option>
+              <option value="Python">🐍 Python</option>
+              <option value="JavaScript">🟨 JavaScript</option>
+              <option value="SQL">💾 SQL</option>
+            </select>
           </div>
 
-          <div className="divide-y divide-custom-secondary/10 min-w-[750px]">
-            {displayEntries.map((entry) => (
-              <div key={entry.userId} className="my-4">
-                <LeaderboardRow
-                  rank={entry.rank}
-                  name={`${entry.name} ${entry.lastName}`}
-                  level={entry.totalRate}
-                  topSkillName={entry.topSkillName}
-                  topSkillPoints={entry.topSkillPoints}
-                  requestedSkillPoints={entry.skillPoints}
-                  university={entry.university}
-                  isFavorite={favorites.has(entry.userId)}
-                  onToggleFavorite={() => handleToggleFavorite(entry.userId)}
-                  email={entry.username || "no-email@example.com"}
-                />
+          <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg overflow-x-auto min-h-[500px] relative">
+            {loading && (
+              <div className="absolute inset-0 bg-custom-bg-secondary/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
+                <span className="loading loading-spinner loading-lg text-custom-accent"></span>
               </div>
-            ))}
-          </div>
+            )}
 
-          {displayEntries.length === 0 && !loading && (
-            <div className="p-8 text-center text-custom-secondary">
-              Студентов с такими параметрами не найдено
+            <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium min-w-[750px]">
+              <div className="w-8 sm:w-10 text-center shrink-0">№</div>
+              <div className="flex-1 min-w-[200px]">Студент</div>
+              <div className="w-24 text-center shrink-0">Всего XP</div>
+              <div className="w-32 text-center shrink-0">
+                {sortBySkill ? `Очки: ${sortBySkill}` : "Топ навык"}
+              </div>
+              <div className="w-32 text-center shrink-0">ВУЗ</div>
+              <div className="w-48 text-center shrink-0 text-right pr-4">
+                Действие
+              </div>
             </div>
-          )}
+
+            <div className="divide-y divide-custom-secondary/10 min-w-[750px]">
+              {displayEntries.map((entry) => (
+                <div key={entry.userId} className="my-4">
+                  <LeaderboardRow
+                    rank={entry.rank}
+                    name={`${entry.name} ${entry.lastName}`}
+                    level={entry.totalRate}
+                    topSkillName={entry.topSkillName}
+                    topSkillPoints={entry.topSkillPoints}
+                    requestedSkillPoints={entry.skillPoints}
+                    university={entry.university}
+                    isFavorite={favorites.has(entry.userId)}
+                    onToggleFavorite={() => handleToggleFavorite(entry.userId)}
+                    onViewTree={() => handleViewTree(entry)} // Передаем функцию открытия дерева
+                    email={entry.username || "no-email@example.com"}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {displayEntries.length === 0 && !loading && (
+              <div className="p-8 text-center text-custom-secondary">
+                Студентов с такими параметрами не найдено
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* МОДАЛЬНОЕ ОКНО С КАРТОЙ НАВЫКОВ (Drag-to-Scroll) */}
+      {selectedStudentTree && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-12 bg-black/70 backdrop-blur-sm">
+          <div className="bg-custom-bg-main border border-custom-secondary/20 rounded-[2.5rem] w-full max-w-6xl h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
+            {/* Шапка модалки */}
+            <div className="flex justify-between items-center p-6 sm:px-10 border-b border-custom-secondary/20 bg-custom-bg-secondary/50 backdrop-blur-md z-20 shrink-0">
+              <div>
+                <h2 className="text-2xl font-bold text-custom-main">
+                  Карта навыков:{" "}
+                  <span className="text-custom-accent">
+                    {selectedStudentTree.name}
+                  </span>
+                </h2>
+                <div className="flex gap-4 mt-1">
+                  <p className="text-custom-secondary text-sm">
+                    Всего: {selectedStudentTree.totalRate} XP
+                  </p>
+                  <p className="text-custom-accent text-sm font-bold">
+                    Уровень:{" "}
+                    {Math.floor(selectedStudentTree.totalRate / 1000) + 1}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedStudentTree(null)}
+                className="btn btn-ghost btn-circle text-custom-secondary hover:text-custom-main hover:bg-custom-bg-main transition-all"
+              >
+                <X size={28} />
+              </button>
+            </div>
+
+            {/* Область с деревом (теперь со скроллом и перетаскиванием) */}
+            <div className="flex-1 bg-custom-bg-main relative overflow-hidden">
+              <SkillTree
+                nodes={selectedStudentTree.nodes}
+                skillPoints={selectedStudentTree.totalRate}
+                selectedId={null}
+              />
+
+              {/* Подсказка-оверлей */}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-2 bg-custom-bg-secondary/90 backdrop-blur border border-custom-secondary/20 rounded-full text-custom-secondary text-xs z-20 pointer-events-none shadow-xl flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-custom-accent animate-pulse"></span>
+                Зажмите левую кнопку мыши, чтобы перемещаться по карте
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
