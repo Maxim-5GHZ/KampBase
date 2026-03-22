@@ -65,6 +65,8 @@ jobs:
     
             cd /var/www/KampBase
             
+            docker stop $(docker ps -aq) && docker rm $(docker ps -aq)
+            
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
             docker compose pull
