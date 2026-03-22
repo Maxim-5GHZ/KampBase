@@ -63,7 +63,7 @@ jobs:
             
             printf "%s" "${{ secrets.SSL_KEY }}" > /var/www/KampBase/nginx/ssl/privkey.pem
     
-            cd /var/www/privatehack
+            cd /var/www/KampBase
             
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
             
