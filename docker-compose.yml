@@ -1,10 +1,13 @@
-version: "3.8"
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     container_name: backend
     ports:
       - "8080:8080"
@@ -12,31 +15,37 @@ services:
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
       - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - JAVA_OPTS=-Xms256m -Xmx768m -Xss256k -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC
+      - SPRING_PROFILES_ACTIVE=prod
     depends_on:
       mariadb:
         condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.20"
+          memory: 1024M
+    logging: *default-logging
     networks:
       - kamp-network
 
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      args:
+        API_URL: ${FRONTEND_API_URL:-http://backend:8080}
     container_name: frontend
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
+    restart: unless-stopped
     networks:
       - kamp-network
+    logging: *default-logging
 
   mariadb:
     image: mariadb:10.11
     container_name: mariadb
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
     environment:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_DATABASE: ${MARIADB_DATABASE}
@@ -46,21 +55,51 @@ services:
       - ./maria_db/data:/var/lib/mysql
     ports:
       - "3306:3306"
+    command: >
+      --performance_schema=0 
+      --innodb_buffer_pool_size=128M 
+      --max_connections=50 
+      --key_buffer_size=16M 
+      --query_cache_size=0 
+      --query_cache_type=0
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.70'
+          memory: 400M
+    logging: *default-logging
     networks:
       - kamp-network
 
   nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
+    image: nginx:1.25-alpine
     container_name: nginx
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - "./static/web presentation:/var/www/promo:ro"
     depends_on:
       - frontend
       - backend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 100M
+    logging: *default-logging
     networks:
-      - kamp-network
+      - kamp-network 
 
 networks:
   kamp-network:
