@@ -10,8 +10,7 @@ let mockArticles: Article[] = [
       "Пошаговое руководство по настройке Docker для локальной разработки. Учимся писать Dockerfile и docker-compose.yml.",
     format: ArticleFormat.MD,
     link: "#",
-    previewPhotoLink:
-      "https://images.unsplash.com/photo-1605745341112-85968b19335b?auto=format&fit=crop&w=800&q=80",
+    previewPhotoLink: "/image1.png",
     author: "AlexDev",
     authorId: 1,
     starCount: 142,
@@ -23,8 +22,7 @@ let mockArticles: Article[] = [
       "Разбираем основные принципы REST, правильное именование эндпоинтов, статусы ответов и версионирование API.",
     format: ArticleFormat.MD,
     link: "#",
-    previewPhotoLink:
-      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80",
+    previewPhotoLink: "/image2.png",
     author: "Maria_Backend",
     authorId: 2,
     starCount: 89,
@@ -36,8 +34,7 @@ let mockArticles: Article[] = [
       "Плюсы и минусы микросервисов. Когда стоит переходить от монолита и какие инструменты (RabbitMQ, Kafka) использовать.",
     format: ArticleFormat.PDF,
     link: "#",
-    previewPhotoLink:
-      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
+    previewPhotoLink: "/image3.png",
     author: "TechLead",
     authorId: 3,
     starCount: 256,
@@ -49,8 +46,7 @@ let mockArticles: Article[] = [
       "Быстрые запросы для высоконагруженных систем. Разбираем B-Tree индексы, EXPLAIN и правильные JOIN.",
     format: ArticleFormat.MD,
     link: "#",
-    previewPhotoLink:
-      "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?auto=format&fit=crop&w=800&q=80",
+    previewPhotoLink: "/image4.png",
     author: "DBA_Guru",
     authorId: 4,
     starCount: 115,
@@ -62,8 +58,7 @@ let mockArticles: Article[] = [
       "Singleton, Factory, Strategy, Observer. Разбираем классические паттерны GoF на реальных примерах из Spring Framework.",
     format: ArticleFormat.MD,
     link: "#",
-    previewPhotoLink:
-      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80",
+    previewPhotoLink: "/image5.png",
     author: "JavaMaster",
     authorId: 5,
     starCount: 310,
@@ -75,8 +70,7 @@ let mockArticles: Article[] = [
       "Разбираем слоистую архитектуру Дядюшки Боба. Разделение domain, use-case и infrastructure слоев.",
     format: ArticleFormat.MD,
     link: "#",
-    previewPhotoLink:
-      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
+    previewPhotoLink: "/image6.png",
     author: "Arch_Guy",
     authorId: 6,
     starCount: 204,
