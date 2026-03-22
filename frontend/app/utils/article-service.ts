@@ -1,4 +1,4 @@
-// File: ./frontend/app/utils/article-service.ts
+// frontend/app/utils/article-service.ts
 import { ArticleRequest, Article, ArticleFormat } from "./types";
 import { authService } from "./auth-service";
 
@@ -7,7 +7,7 @@ let mockArticles: Article[] = [
     id: 1,
     title: "Как поднять Docker с нуля",
     about:
-      "Пошаговое руководство по настройке Docker для локальной разработки. Учимся писать Dockerfile.",
+      "Пошаговое руководство по настройке Docker для локальной разработки. Учимся писать Dockerfile и docker-compose.yml.",
     format: ArticleFormat.MD,
     link: "#",
     previewPhotoLink:
@@ -20,7 +20,7 @@ let mockArticles: Article[] = [
     id: 2,
     title: "Основы проектирования REST API",
     about:
-      "Разбираем основные принципы REST, правильное именование эндпоинтов, статусы ответов.",
+      "Разбираем основные принципы REST, правильное именование эндпоинтов, статусы ответов и версионирование API.",
     format: ArticleFormat.MD,
     link: "#",
     previewPhotoLink:
@@ -33,7 +33,7 @@ let mockArticles: Article[] = [
     id: 3,
     title: "Введение в микросервисную архитектуру",
     about:
-      "Плюсы и минусы микросервисов. Когда стоит переходить и какие инструменты использовать.",
+      "Плюсы и минусы микросервисов. Когда стоит переходить от монолита и какие инструменты (RabbitMQ, Kafka) использовать.",
     format: ArticleFormat.PDF,
     link: "#",
     previewPhotoLink:
@@ -44,8 +44,9 @@ let mockArticles: Article[] = [
   },
   {
     id: 4,
-    title: "Оптимизация SQL",
-    about: "Быстрые запросы для высоконагруженных систем. Разбираем индексы.",
+    title: "Оптимизация SQL-запросов",
+    about:
+      "Быстрые запросы для высоконагруженных систем. Разбираем B-Tree индексы, EXPLAIN и правильные JOIN.",
     format: ArticleFormat.MD,
     link: "#",
     previewPhotoLink:
@@ -54,9 +55,35 @@ let mockArticles: Article[] = [
     authorId: 4,
     starCount: 115,
   },
+  {
+    id: 5,
+    title: "Паттерны проектирования в Java",
+    about:
+      "Singleton, Factory, Strategy, Observer. Разбираем классические паттерны GoF на реальных примерах из Spring Framework.",
+    format: ArticleFormat.MD,
+    link: "#",
+    previewPhotoLink:
+      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80",
+    author: "JavaMaster",
+    authorId: 5,
+    starCount: 310,
+  },
+  {
+    id: 6,
+    title: "Clean Architecture: Стоит ли использовать?",
+    about:
+      "Разбираем слоистую архитектуру Дядюшки Боба. Разделение domain, use-case и infrastructure слоев.",
+    format: ArticleFormat.MD,
+    link: "#",
+    previewPhotoLink:
+      "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
+    author: "Arch_Guy",
+    authorId: 6,
+    starCount: 204,
+  },
 ];
 
-let nextId = 5;
+let nextId = 7;
 
 class ArticleService {
   async createWithFile(

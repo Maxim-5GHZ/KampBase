@@ -1,4 +1,3 @@
-// File: ./frontend/app/utils/hr-service.ts
 import { LeaderboardEntry, UserShortInfo } from "./types";
 
 let mockLeaderboard: LeaderboardEntry[] = [
@@ -39,12 +38,92 @@ let mockLeaderboard: LeaderboardEntry[] = [
     username: "kuznetsova",
     name: "Елена",
     lastName: "Кузнецова",
+    totalRate: 2500,
+    skillPoints: null,
+  },
+  {
+    userId: 6,
+    username: "morozov",
+    name: "Максим",
+    lastName: "Морозов",
+    totalRate: 2100,
+    skillPoints: null,
+  },
+  {
+    userId: 7,
+    username: "volkov",
+    name: "Сергей",
+    lastName: "Волков",
+    totalRate: 1950,
+    skillPoints: null,
+  },
+  {
+    userId: 8,
+    username: "lebedeva",
+    name: "Ольга",
+    lastName: "Лебедева",
+    totalRate: 1800,
+    skillPoints: null,
+  },
+  {
+    userId: 9,
+    username: "novikov",
+    name: "Никита",
+    lastName: "Новиков",
+    totalRate: 1650,
+    skillPoints: null,
+  },
+  {
+    userId: 10,
+    username: "popov",
+    name: "Артем",
+    lastName: "Попов",
     totalRate: 1500,
+    skillPoints: null,
+  },
+  {
+    userId: 11,
+    username: "sokolov",
+    name: "Михаил",
+    lastName: "Соколов",
+    totalRate: 1200,
+    skillPoints: null,
+  },
+  {
+    userId: 12,
+    username: "mikhailova",
+    name: "Мария",
+    lastName: "Михайлова",
+    totalRate: 950,
+    skillPoints: null,
+  },
+  {
+    userId: 13,
+    username: "fedorov",
+    name: "Роман",
+    lastName: "Федоров",
+    totalRate: 800,
+    skillPoints: null,
+  },
+  {
+    userId: 14,
+    username: "alekseev",
+    name: "Егор",
+    lastName: "Алексеев",
+    totalRate: 600,
+    skillPoints: null,
+  },
+  {
+    userId: 15,
+    username: "vasiliev",
+    name: "Илья",
+    lastName: "Васильев",
+    totalRate: 450,
     skillPoints: null,
   },
 ];
 
-let mockFavorites = new Set<number>();
+let mockFavorites = new Set<number>([1, 4]); // По умолчанию Иван и Дмитрий в избранном
 
 class HrService {
   async getLeaderboard(skill?: string): Promise<LeaderboardEntry[]> {
