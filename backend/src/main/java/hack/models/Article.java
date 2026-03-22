@@ -29,9 +29,8 @@ public class Article {
 
     private String link;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "stringrole")
-    private Role stringRole;
+    private String stringRole;
 
     @Column(name = "preview_photo_link")
     private String previewPhotoLink;

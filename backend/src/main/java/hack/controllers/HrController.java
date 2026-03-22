@@ -43,13 +43,18 @@ public class HrController {
         List<TreeOfSkills> allTrees = treeOfSkillsRepository.findAll();
         List<TreeOfSkills> filteredTrees;
 
+        // ИСПРАВЛЕНИЕ: Оставляем только студентов
+        List<TreeOfSkills> studentTrees = allTrees.stream()
+                .filter(t -> t.getUser() != null && t.getUser().getRole() == Role.STUDENT)
+                .collect(Collectors.toList());
+
         if (skill != null && !skill.trim().isEmpty()) {
-            filteredTrees = allTrees.stream()
+            filteredTrees = studentTrees.stream()
                     .filter(t -> t.getSkills() != null && t.getSkills().containsKey(skill))
                     .sorted((t1, t2) -> t2.getSkills().get(skill).compareTo(t1.getSkills().get(skill)))
                     .collect(Collectors.toList());
         } else {
-            filteredTrees = allTrees.stream()
+            filteredTrees = studentTrees.stream()
                     .sorted((t1, t2) -> Integer.compare(
                             t2.getRate() != null ? t2.getRate() : 0, 
                             t1.getRate() != null ? t1.getRate() : 0))
@@ -62,9 +67,6 @@ public class HrController {
                 skillPoints = tree.getSkills().getOrDefault(skill, 0);
             }
             
-            // Защита от потенциального NPE (если юзера вдруг удалили напрямую в БД)
-            if (tree.getUser() == null) return null;
-
             return new LeaderboardResponse(
                     tree.getUser().getUserId(),
                     tree.getUser().getUsername(),
@@ -73,7 +75,7 @@ public class HrController {
                     tree.getRate() != null ? tree.getRate() : 0,
                     skillPoints
             );
-        }).filter(java.util.Objects::nonNull).collect(Collectors.toList());
+        }).collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }

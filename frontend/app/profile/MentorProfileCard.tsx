@@ -1,10 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Users, ClipboardList, ListTodo, LogOut } from "lucide-react";
+import {
+  User,
+  Users,
+  ClipboardList,
+  ListTodo,
+  LogOut,
+  Plus,
+  X,
+  BookOpen,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/utils/auth-service";
 import { taskService } from "@/app/utils/task-service";
+import {
+  ArticleRequest,
+  ArticleFormat,
+  Article,
+} from "@/app/utils/types";
+import { articleService } from "@/app/utils/article-service";
+import MyArticles from "./MyArticles";
 
 type TaskStat = {
   id: string;
@@ -25,6 +41,33 @@ export default function MentorProfileCard() {
   const router = useRouter();
   const [mentorData, setMentorData] = useState<MentorData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>([]);
+
+  // ... твои существующие стейты для заданий ...
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
+  const [articleFormData, setArticleFormData] = useState<
+    Omit<ArticleRequest, "link">
+  >({
+    title: "",
+    about: "",
+    format: ArticleFormat.MD,
+    previewPhotoLink: "",
+  });
+  const [selectedArticleFile, setSelectedArticleFile] =
+    useState<File | null>(null);
+  const [isSubmittingArticle, setIsSubmittingArticle] = useState(false);
+
+  const fetchArticles = async () => {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) return;
+      const data = await articleService.getAll();
+      const myArticles = data.filter((article) => article.authorId === user.id);
+      setArticles(myArticles);
+    } catch (error) {
+      console.error("Ошибка загрузки статей:", error);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -93,11 +136,31 @@ export default function MentorProfileCard() {
     };
 
     loadData();
+    fetchArticles();
   }, [router]);
 
   const handleLogout = () => {
     authService.logout();
     router.push("/login");
+  };
+
+  const handleArticleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedArticleFile) return alert("Выберите файл");
+    try {
+      await articleService.createWithFile(articleFormData, selectedArticleFile);
+      setIsArticleModalOpen(false);
+      setArticleFormData({
+        title: "",
+        about: "",
+        format: ArticleFormat.MD,
+        previewPhotoLink: "",
+      });
+      setSelectedArticleFile(null);
+      fetchArticles();
+    } catch (error) {
+      alert("Ошибка при загрузке статьи");
+    }
   };
 
   if (loading || !mentorData) {
@@ -175,6 +238,81 @@ export default function MentorProfileCard() {
           Все задания
         </button>
       </div>
+
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+        <button
+          onClick={() => setIsArticleModalOpen(true)}
+          className="btn btn-secondary rounded-full shadow-2xl flex items-center gap-2 px-6"
+        >
+          <Plus size={20} /> Написать статью
+        </button>
+      </div>
+
+      {isArticleModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-custom-bg-main rounded-3xl p-6 w-full max-w-md border border-custom-secondary/20">
+            <div className="flex justify-between mb-4">
+              <h3 className="text-xl font-bold text-custom-main">
+                Новая статья
+              </h3>
+              <X
+                className="cursor-pointer"
+                onClick={() => setIsArticleModalOpen(false)}
+              />
+            </div>
+            <form onSubmit={handleArticleSubmit} className="space-y-4">
+              <input
+                className="w-full input input-bordered bg-custom-bg-secondary"
+                placeholder="Заголовок"
+                value={articleFormData.title}
+                onChange={(e) =>
+                  setArticleFormData({
+                    ...articleFormData,
+                    title: e.target.value,
+                  })
+                }
+                required
+              />
+              <textarea
+                className="w-full textarea textarea-bordered bg-custom-bg-secondary"
+                placeholder="О чем статья?"
+                value={articleFormData.about}
+                onChange={(e) =>
+                  setArticleFormData({
+                    ...articleFormData,
+                    about: e.target.value,
+                  })
+                }
+                required
+              />
+              <select
+                className="select select-bordered w-full bg-custom-bg-secondary"
+                value={articleFormData.format}
+                onChange={(e) =>
+                  setArticleFormData({
+                    ...articleFormData,
+                    format: e.target.value as ArticleFormat,
+                  })
+                }
+              >
+                <option value={ArticleFormat.MD}>Markdown (.md)</option>
+                <option value={ArticleFormat.PDF}>PDF (.pdf)</option>
+              </select>
+              <input
+                type="file"
+                className="file-input file-input-bordered w-full bg-custom-bg-secondary"
+                onChange={(e) =>
+                  setSelectedArticleFile(e.target.files?.[0] || null)
+                }
+                required
+              />
+              <button className="btn btn-secondary w-full rounded-button">
+                Загрузить в Wiki
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={handleLogout}

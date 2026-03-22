@@ -58,7 +58,7 @@ public ResponseEntity<?> createArticle(@RequestBody ArticleRequest request,
     
     article.setAuthorId(user.getUserId());
     article.setAuthor(user.getUsername());
-    article.setStringRole(user.getRole());
+    article.setStringRole(user.getRole().name());
     article.setStarCount(0L);
 
     return ResponseEntity.ok(articleRepository.save(article));
