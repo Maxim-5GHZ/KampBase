@@ -1,49 +1,75 @@
-import axios, { AxiosInstance } from "axios";
-import { authService } from "./auth-service";
+// File: ./frontend/app/utils/hr-service.ts
 import { LeaderboardEntry, UserShortInfo } from "./types";
 
+let mockLeaderboard: LeaderboardEntry[] = [
+  {
+    userId: 1,
+    username: "ivanov",
+    name: "Иван",
+    lastName: "Иванов",
+    totalRate: 5400,
+    skillPoints: null,
+  },
+  {
+    userId: 2,
+    username: "petrova",
+    name: "Анна",
+    lastName: "Петрова",
+    totalRate: 4200,
+    skillPoints: null,
+  },
+  {
+    userId: 3,
+    username: "smirnov",
+    name: "Алексей",
+    lastName: "Смирнов",
+    totalRate: 3100,
+    skillPoints: null,
+  },
+  {
+    userId: 4,
+    username: "sidorov",
+    name: "Дмитрий",
+    lastName: "Сидоров",
+    totalRate: 2800,
+    skillPoints: null,
+  },
+  {
+    userId: 5,
+    username: "kuznetsova",
+    name: "Елена",
+    lastName: "Кузнецова",
+    totalRate: 1500,
+    skillPoints: null,
+  },
+];
+
+let mockFavorites = new Set<number>();
+
 class HrService {
-  private http: AxiosInstance;
-
-  constructor(baseURL: string = "/api/hr") {
-    this.http = axios.create({
-      baseURL,
-      headers: { "Content-Type": "application/json" },
-    });
-
-    this.http.interceptors.request.use((config) => {
-      const headers = authService.getAuthHeader();
-      if (headers.Authorization) {
-        config.headers.Authorization = headers.Authorization;
-      }
-      return config;
-    });
-  }
-
   async getLeaderboard(skill?: string): Promise<LeaderboardEntry[]> {
-    const response = await this.http.get<LeaderboardEntry[]>("/leaderboard", {
-      params: skill ? { skill } : {},
-    });
-    return response.data;
+    return [...mockLeaderboard].sort((a, b) => b.totalRate - a.totalRate);
   }
 
   async addFavorite(studentId: number): Promise<{ message: string }> {
-    const response = await this.http.post<{ message: string }>(
-      `/favorites/${studentId}`,
-    );
-    return response.data;
+    mockFavorites.add(studentId);
+    return { message: "ok" };
   }
 
   async removeFavorite(studentId: number): Promise<{ message: string }> {
-    const response = await this.http.delete<{ message: string }>(
-      `/favorites/${studentId}`,
-    );
-    return response.data;
+    mockFavorites.delete(studentId);
+    return { message: "ok" };
   }
 
   async getFavorites(): Promise<UserShortInfo[]> {
-    const response = await this.http.get<UserShortInfo[]>("/favorites");
-    return response.data;
+    return mockLeaderboard
+      .filter((u) => mockFavorites.has(u.userId))
+      .map((u) => ({
+        userId: u.userId,
+        username: u.username,
+        name: u.name,
+        lastName: u.lastName,
+      }));
   }
 }
 

@@ -203,9 +203,8 @@ public class Article {
 
     private String link;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "stringrole")
-    private Role stringRole;
+    private String stringRole;
 
     @Column(name = "preview_photo_link")
     private String previewPhotoLink;
@@ -1054,7 +1053,7 @@ public ResponseEntity<?> createArticle(@RequestBody ArticleRequest request,
     
     article.setAuthorId(user.getUserId());
     article.setAuthor(user.getUsername());
-    article.setStringRole(user.getRole());
+    article.setStringRole(user.getRole().name());
     article.setStarCount(0L);
 
     return ResponseEntity.ok(articleRepository.save(article));
@@ -1173,13 +1172,18 @@ public class HrController {
         List<TreeOfSkills> allTrees = treeOfSkillsRepository.findAll();
         List<TreeOfSkills> filteredTrees;
 
+        // ИСПРАВЛЕНИЕ: Оставляем только студентов
+        List<TreeOfSkills> studentTrees = allTrees.stream()
+                .filter(t -> t.getUser() != null && t.getUser().getRole() == Role.STUDENT)
+                .collect(Collectors.toList());
+
         if (skill != null && !skill.trim().isEmpty()) {
-            filteredTrees = allTrees.stream()
+            filteredTrees = studentTrees.stream()
                     .filter(t -> t.getSkills() != null && t.getSkills().containsKey(skill))
                     .sorted((t1, t2) -> t2.getSkills().get(skill).compareTo(t1.getSkills().get(skill)))
                     .collect(Collectors.toList());
         } else {
-            filteredTrees = allTrees.stream()
+            filteredTrees = studentTrees.stream()
                     .sorted((t1, t2) -> Integer.compare(
                             t2.getRate() != null ? t2.getRate() : 0, 
                             t1.getRate() != null ? t1.getRate() : 0))
@@ -1192,9 +1196,6 @@ public class HrController {
                 skillPoints = tree.getSkills().getOrDefault(skill, 0);
             }
             
-            // Защита от потенциального NPE (если юзера вдруг удалили напрямую в БД)
-            if (tree.getUser() == null) return null;
-
             return new LeaderboardResponse(
                     tree.getUser().getUserId(),
                     tree.getUser().getUsername(),
@@ -1203,7 +1204,7 @@ public class HrController {
                     tree.getRate() != null ? tree.getRate() : 0,
                     skillPoints
             );
-        }).filter(java.util.Objects::nonNull).collect(Collectors.toList());
+        }).collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
@@ -2522,91 +2523,91 @@ function Header() {
 
 
 File: ./frontend/app/wiki/card.tsx
-"use client"
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Star } from 'lucide-react';
-import Image from 'next/image';
+import { useState } from "react";
+import Link from "next/link";
+import { Star } from "lucide-react";
+import Image from "next/image";
 
 interface ArticleCardProps {
-    title: string;
-    author: string;
-    description: string;
-    imageUrl: string;
-    readTime: number; // минуты
-    link: string;
-    starCount: number;
-    isStarred: boolean;
+  title: string;
+  author: string;
+  description: string;
+  imageUrl: string;
+  readTime: number;
+  link: string;
+  starCount: number;
+  isStarred: boolean;
 }
 
 export default function ArticleCard({
-    title,
-    author,
-    description,
-    imageUrl,
-    readTime,
-    link,
-    starCount,
-    isStarred,
+  title,
+  author,
+  description,
+  imageUrl,
+  readTime,
+  link,
+  starCount,
+  isStarred,
 }: ArticleCardProps) {
-    const [error, setError] = useState(true);
-    console.log("Drawing card");
+  // Изначально ошибки нет (false)
+  const [error, setError] = useState(false);
 
-    return (
-        <div className="bg-custom-bg-secondary rounded-card p-6 flex flex-col shadow-2xs">
-        {/* Название по центру */}
-        <h3 className="text-custom-main text-center font-bold text-lg">{title}</h3>
+  // Путь к дефолтной картинке в папке public
+  const fallbackImage = "/placeholder-image.jpg";
 
-        {/* Автор по центру */}
-        <p className="text-custom-main text-center mt-1">{author}</p>
+  // Если ссылка пустая или произошла ошибка загрузки - используем заглушку
+  const finalImageSrc =
+    error || !imageUrl || imageUrl.trim() === "" ? fallbackImage : imageUrl;
 
-        {/* Короткое описание (слева) */}
-        <p className="text-custom-secondary text-start mt-2">{description}</p>
+  return (
+    <div className="bg-custom-bg-secondary rounded-card p-6 flex flex-col shadow-2xs h-full">
+      <h3 className="text-custom-main text-center font-bold text-lg line-clamp-1">
+        {title}
+      </h3>
+      <p className="text-custom-main text-center mt-1">{author}</p>
+      <p className="text-custom-secondary text-start mt-2 line-clamp-3 flex-grow">
+        {description}
+      </p>
 
-        {/* Картинка */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {error ? (
-            <div className="bg-custom-bg-secondary w-auto h-40 mt-3 mx-8 rounded-2xl flex items-center justify-center">
-                <span>Нет фото</span>
-            </div>
-            ) : (
-            <Image
-                src={imageUrl}
-                alt={""}
-                width={400}
-                height={160}
-                className="w-full h-40 object-cover mt-3 rounded"
-                onError={() => setError(true)}
-            />
-        )}
+      <div className="relative w-full h-40 mt-3 rounded-2xl overflow-hidden">
+        <Image
+          src={finalImageSrc}
+          alt={title}
+          fill
+          className="object-cover"
+          onError={() => setError(true)}
+          unoptimized // Полезно, если imageUrl ведет на внешние ресурсы типа GitHub
+        />
+      </div>
 
-        {/* Нижняя строка: время, кнопка, звёзды */}
-        <div className="flex justify-between items-center mt-4 mx-4">
-            {/* Время чтения */}
-            <span className="text-custom-secondary">~{readTime} мин</span>
+      <div className="flex justify-between items-center mt-4 px-2">
+        <span className="text-custom-secondary text-sm">~{readTime} мин</span>
 
-            {/* Кнопка "Читать" */}
-            <Link
-            href={link}
-            className="btn btn-primary font-normal px-8 py-1 rounded-button"
-            >
-            Читать
-            </Link>
+        <Link
+          href={link}
+          className="btn btn-primary font-normal px-6 py-1 rounded-button text-sm"
+        >
+          Читать
+        </Link>
 
-            {/* Звезда и количество */}
-            <div className="flex items-center gap-1">
-            <Star
-                size={24}
-                className={isStarred ? 'text-custom-accent fill-current' : 'text-custom-accent'}
-                fill={isStarred ? 'currentColor' : 'none'}
-            />
-            <span className="text-custom-main mt-1">{starCount}</span>
-            </div>
+        <div className="flex items-center gap-1">
+          <Star
+            size={20}
+            className={
+              isStarred
+                ? "text-custom-accent fill-current"
+                : "text-custom-accent"
+            }
+          />
+          <span className="text-custom-main text-sm">{starCount}</span>
         </div>
-        </div>
-    );
+      </div>
+    </div>
+  );
 }
+
 
 ============================================================
 
@@ -5132,10 +5133,26 @@ File: ./frontend/app/profile/MentorProfileCard.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Users, ClipboardList, ListTodo, LogOut } from "lucide-react";
+import {
+  User,
+  Users,
+  ClipboardList,
+  ListTodo,
+  LogOut,
+  Plus,
+  X,
+  BookOpen,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/utils/auth-service";
 import { taskService } from "@/app/utils/task-service";
+import {
+  ArticleRequest,
+  ArticleFormat,
+  Article,
+} from "@/app/utils/types";
+import { articleService } from "@/app/utils/article-service";
+import MyArticles from "./MyArticles";
 
 type TaskStat = {
   id: string;
@@ -5156,6 +5173,33 @@ export default function MentorProfileCard() {
   const router = useRouter();
   const [mentorData, setMentorData] = useState<MentorData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [articles, setArticles] = useState<Article[]>([]);
+
+  // ... твои существующие стейты для заданий ...
+  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
+  const [articleFormData, setArticleFormData] = useState<
+    Omit<ArticleRequest, "link">
+  >({
+    title: "",
+    about: "",
+    format: ArticleFormat.MD,
+    previewPhotoLink: "",
+  });
+  const [selectedArticleFile, setSelectedArticleFile] =
+    useState<File | null>(null);
+  const [isSubmittingArticle, setIsSubmittingArticle] = useState(false);
+
+  const fetchArticles = async () => {
+    try {
+      const user = authService.getCurrentUser();
+      if (!user) return;
+      const data = await articleService.getAll();
+      const myArticles = data.filter((article) => article.authorId === user.id);
+      setArticles(myArticles);
+    } catch (error) {
+      console.error("Ошибка загрузки статей:", error);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -5224,11 +5268,31 @@ export default function MentorProfileCard() {
     };
 
     loadData();
+    fetchArticles();
   }, [router]);
 
   const handleLogout = () => {
     authService.logout();
     router.push("/login");
+  };
+
+  const handleArticleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedArticleFile) return alert("Выберите файл");
+    try {
+      await articleService.createWithFile(articleFormData, selectedArticleFile);
+      setIsArticleModalOpen(false);
+      setArticleFormData({
+        title: "",
+        about: "",
+        format: ArticleFormat.MD,
+        previewPhotoLink: "",
+      });
+      setSelectedArticleFile(null);
+      fetchArticles();
+    } catch (error) {
+      alert("Ошибка при загрузке статьи");
+    }
   };
 
   if (loading || !mentorData) {
@@ -5306,6 +5370,81 @@ export default function MentorProfileCard() {
           Все задания
         </button>
       </div>
+
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+        <button
+          onClick={() => setIsArticleModalOpen(true)}
+          className="btn btn-secondary rounded-full shadow-2xl flex items-center gap-2 px-6"
+        >
+          <Plus size={20} /> Написать статью
+        </button>
+      </div>
+
+      {isArticleModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-custom-bg-main rounded-3xl p-6 w-full max-w-md border border-custom-secondary/20">
+            <div className="flex justify-between mb-4">
+              <h3 className="text-xl font-bold text-custom-main">
+                Новая статья
+              </h3>
+              <X
+                className="cursor-pointer"
+                onClick={() => setIsArticleModalOpen(false)}
+              />
+            </div>
+            <form onSubmit={handleArticleSubmit} className="space-y-4">
+              <input
+                className="w-full input input-bordered bg-custom-bg-secondary"
+                placeholder="Заголовок"
+                value={articleFormData.title}
+                onChange={(e) =>
+                  setArticleFormData({
+                    ...articleFormData,
+                    title: e.target.value,
+                  })
+                }
+                required
+              />
+              <textarea
+                className="w-full textarea textarea-bordered bg-custom-bg-secondary"
+                placeholder="О чем статья?"
+                value={articleFormData.about}
+                onChange={(e) =>
+                  setArticleFormData({
+                    ...articleFormData,
+                    about: e.target.value,
+                  })
+                }
+                required
+              />
+              <select
+                className="select select-bordered w-full bg-custom-bg-secondary"
+                value={articleFormData.format}
+                onChange={(e) =>
+                  setArticleFormData({
+                    ...articleFormData,
+                    format: e.target.value as ArticleFormat,
+                  })
+                }
+              >
+                <option value={ArticleFormat.MD}>Markdown (.md)</option>
+                <option value={ArticleFormat.PDF}>PDF (.pdf)</option>
+              </select>
+              <input
+                type="file"
+                className="file-input file-input-bordered w-full bg-custom-bg-secondary"
+                onChange={(e) =>
+                  setSelectedArticleFile(e.target.files?.[0] || null)
+                }
+                required
+              />
+              <button className="btn btn-secondary w-full rounded-button">
+                Загрузить в Wiki
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={handleLogout}
