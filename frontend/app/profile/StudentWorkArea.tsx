@@ -14,23 +14,24 @@ export default function WorkArea({ nodes, skillPoints = 0 }: WorkAreaProps) {
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
   return (
-    <div className="p-4">
+    <div className="p-4 flex flex-col h-full">
       <h2 className="text-center text-2xl sm:text-3xl md:text-4xl font-semibold mb-4">
         Дерево навыков
       </h2>
 
-      {/* Контейнер с горизонтальным скроллом для мобильных устройств */}
-      <div className="w-full overflow-x-auto pb-8 scrollbar-hide">
-        {/* Ограничиваем минимальную ширину, чтобы узлы не наезжали друг на друга */}
-        <div className="min-w-[800px]">
-          <SkillTree
-            nodes={nodes}
-            skillPoints={skillPoints}
-            selectedId={selectedNode}
-            onNodeClick={setSelectedNode}
-          />
-        </div>
+      {/* Окно-иллюминатор для дерева (ограничиваем высоту, прячем края) */}
+      <div className="w-full h-[65vh] min-h-[500px] rounded-3xl overflow-hidden border border-custom-secondary/20 bg-custom-bg-main relative shadow-inner">
+        <SkillTree
+          nodes={nodes}
+          skillPoints={skillPoints}
+          selectedId={selectedNode}
+          onNodeClick={setSelectedNode}
+        />
       </div>
+      <p className="text-center text-custom-secondary text-sm mt-4">
+        Удерживайте левую кнопку мыши или используйте свайп, чтобы перемещаться
+        по карте навыков
+      </p>
     </div>
   );
 }

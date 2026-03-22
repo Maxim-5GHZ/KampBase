@@ -1,6 +1,7 @@
+// File: ./frontend/app/leaderboard/LeaderboardRow.tsx
 "use client";
 
-import { User, Mail, Github } from "lucide-react";
+import { User, Mail, Github, Network } from "lucide-react";
 
 interface LeaderboardRowProps {
   rank: number;
@@ -12,6 +13,7 @@ interface LeaderboardRowProps {
   university: string;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onViewTree: () => void; // ДОБАВЛЕНО: коллбек для открытия дерева
   email: string;
 }
 
@@ -25,6 +27,7 @@ const LeaderboardRow = ({
   university,
   isFavorite,
   onToggleFavorite,
+  onViewTree,
   email,
 }: LeaderboardRowProps) => {
   return (
@@ -66,16 +69,28 @@ const LeaderboardRow = ({
           {university}
         </div>
 
-        <button
-          onClick={onToggleFavorite}
-          className={`btn btn-primary rounded-button px-3 py-1 text-sm sm:text-base shadow-none w-36 shrink-0 ${
-            isFavorite
-              ? "bg-transparent border border-custom-accent text-custom-accent"
-              : ""
-          }`}
-        >
-          {isFavorite ? "Скрыть" : "Связаться"}
-        </button>
+        {/* Группа кнопок действий */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* ДОБАВЛЕНО: Зеленая кнопка просмотра дерева */}
+          <button
+            onClick={onViewTree}
+            className="btn bg-green-500 hover:bg-green-600 border-none text-white rounded-button px-3 py-1 shadow-none flex items-center justify-center gap-1"
+            title="Посмотреть дерево навыков"
+          >
+            <Network size={18} />
+          </button>
+
+          <button
+            onClick={onToggleFavorite}
+            className={`btn btn-primary rounded-button px-3 py-1 text-sm sm:text-base shadow-none w-32 ${
+              isFavorite
+                ? "bg-transparent border border-custom-accent text-custom-accent"
+                : ""
+            }`}
+          >
+            {isFavorite ? "Скрыть" : "Связаться"}
+          </button>
+        </div>
       </div>
 
       {isFavorite && (
