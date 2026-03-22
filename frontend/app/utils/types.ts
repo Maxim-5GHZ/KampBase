@@ -16,8 +16,12 @@ export interface LeaderboardEntry {
   username: string;
   name: string;
   lastName: string;
+  company: string | null;
   totalRate: number;
   skillPoints: number | null;
+  topSkillName: string | null;
+  topSkillPoints: number | null;
+  skills?: Record<string, number>; // Для локальной сортировки в моках
 }
 
 export enum ArticleFormat {
