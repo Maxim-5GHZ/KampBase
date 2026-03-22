@@ -701,85 +701,100 @@ if (typeof window !== "undefined") {
 
 File: ./frontend/app/wiki/layout.tsx
 "use client";
-import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { Search, ArrowUpDown, Filter, RefreshCw } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Search, ArrowUpDown, Filter, RefreshCw } from "lucide-react";
 import styles from "./wiki.module.css";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-    return (
-        <>
-        <Header />
-        <main className='pt-10'>{children}</main>
-        </>
-    );
+  return (
+    <>
+      <Header />
+      <main className="pt-10">{children}</main>
+    </>
+  );
 }
 
 function Header() {
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    const handleRefresh = () => {
-        setIsRefreshing(true);
-        if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        }
-        timerRef.current = setTimeout(() => {
-        setIsRefreshing(false);
-        }, 1000);
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    if (e.target.value) {
+      router.push(`/wiki?q=${encodeURIComponent(e.target.value)}`);
+    } else {
+      router.push(`/wiki`);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
+  }, []);
 
-    useEffect(() => {
-        return () => {
-        if (timerRef.current) {
-            clearTimeout(timerRef.current);
-        }
-        };
-    }, []);
+  return (
+    <header className="backdrop-blur-2xl fixed w-full bg-custom-bg-secondary px-4 sm:px-6 md:px-16 py-2 flex items-center gap-2 sm:gap-4 md:gap-8 lg:gap-16 shadow-2xs z-40">
+      <a
+        href="/wiki"
+        className={`${styles.logoLink} text-custom-main font-bold text-xl sm:text-2xl whitespace-nowrap`}
+      >
+        <span className="sm:hidden">Wiki</span>
+        <span className={`${styles.desktopText} hidden sm:inline`}>
+          СтудБаза Wiki
+        </span>
+      </a>
 
-    return (
-        <header className="backdrop-blur-2xl fixed w-full bg-custom-bg-secondary px-4 sm:px-6 md:px-16 py-2 flex items-center gap-2 sm:gap-4 md:gap-8 lg:gap-16 shadow-2xs">
-        {/* Логотип / название */}
-        <a href="/wiki" className={`${styles.logoLink} text-custom-main font-bold text-xl sm:text-2xl whitespace-nowrap`}>
-            <span className='sm:hidden'>Wiki</span>
-            <span className={`${styles.desktopText} hidden sm:inline`}>СтудБаза Wiki</span>
-        </a>
-
-        {/* Поисковая строка */}
-        <div className="flex-1 flex items-center bg-custom-secondary rounded-search overflow-hidden">
-            <div className="pl-3 text-custom-main">
-            <Search className='hidden sm:inline' size={20} />
-            </div>
-            <input
-            type="text"
-            placeholder="Как поднять докер..."
-            className="flex-1 bg-transparent px-2 py-2 text-custom-main outline-none placeholder:text-custom-placeholder min-w-0"
-            />
-            <button className="btn btn-primary font-normal h-auto min-h-0 min-w-12 sm:min-w-12 md:min-w-24 py-2 px-2 sm:px-4 rounded-button shrink-0 flex items-center justify-center gap-1">
-            <Search size={18} className="sm:hidden" />
-            <span className="hidden sm:inline">Поиск</span>
-            </button>
+      <div className="flex-1 flex items-center bg-custom-secondary rounded-search overflow-hidden">
+        <div className="pl-3 text-custom-main">
+          <Search className="hidden sm:inline" size={20} />
         </div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Как поднять докер..."
+          className="flex-1 bg-transparent px-2 py-2 text-custom-main outline-none placeholder:text-custom-placeholder min-w-0"
+        />
+        <button className="btn btn-primary font-normal h-auto min-h-0 min-w-12 sm:min-w-12 md:min-w-24 py-2 px-2 sm:px-4 rounded-button shrink-0 flex items-center justify-center gap-1">
+          <Search size={18} className="sm:hidden" />
+          <span className="hidden sm:inline">Поиск</span>
+        </button>
+      </div>
 
-        {/* Иконки действий */}
-        <div className="flex items-center gap-4 sm:gap-6 md:gap-8 text-custom-main">
-            <button className="hover:text-custom-main/70 transition-colors hover:cursor-pointer">
-            <ArrowUpDown size={20} />
-            </button>
-            <button className="hover:text-custom-main/70 transition-colors hover:cursor-pointer">
-            <Filter size={20} />
-            </button>
-            <Link
-            href="/wiki"
-            onClick={handleRefresh}
-            className="hover:text-custom-main/70 transition-colors hover:cursor-pointer"
-            >
-            <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
-            </Link>
-        </div>
-        </header>
-    );
+      <div className="flex items-center gap-4 sm:gap-6 md:gap-8 text-custom-main">
+        <button className="hover:text-custom-main/70 transition-colors hover:cursor-pointer">
+          <ArrowUpDown size={20} />
+        </button>
+        <button className="hover:text-custom-main/70 transition-colors hover:cursor-pointer">
+          <Filter size={20} />
+        </button>
+        <Link
+          href="/wiki"
+          onClick={handleRefresh}
+          className="hover:text-custom-main/70 transition-colors hover:cursor-pointer"
+        >
+          <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
+        </Link>
+      </div>
+    </header>
+  );
 }
+
 
 ============================================================
 
@@ -903,64 +918,82 @@ export default function ArticleCard({
 
 
 File: ./frontend/app/wiki/page.tsx
-import ArticleCard from './card';
-import { articleService } from '@/app/utils/article-service';
-import { Article as ApiArticle } from '@/app/utils/types';
+import ArticleCard from "./card";
+import { articleService } from "@/app/utils/article-service";
+import { Article as ApiArticle } from "@/app/utils/types";
 
 interface CardArticle {
-    title: string;
-    author: string;
-    description: string;
-    imageUrl: string;
-    readTime: number;
-    link: string;
-    starCount: number;
-    isStarred: boolean;
+  title: string;
+  author: string;
+  description: string;
+  imageUrl: string;
+  readTime: number;
+  link: string;
+  starCount: number;
+  isStarred: boolean;
 }
 
-export default async function Wiki() {
-    // Artificial delay for loading.tsx demonstration
-    await new Promise(resolve => setTimeout(resolve, 300));
+export default async function Wiki(props: {
+  searchParams: Promise<{ q?: string }> | { q?: string };
+}) {
+  const params = await props.searchParams;
+  const query = params?.q?.toLowerCase() || "";
 
-    let articles: CardArticle[] = [];
-    let error = null;
+  await new Promise((resolve) => setTimeout(resolve, 300));
 
-    try {
-        const data = await articleService.getAll();
-        articles = data.map((article: ApiArticle) => ({
-        title: article.title,
-        author: article.author,
-        description: article.about,
-        imageUrl: article.previewPhotoLink || '/placeholder-image.jpg',
-        readTime: 5,
-        link: article.link,
-        starCount: article.starCount,
-        isStarred: false,
-        }));
-    } catch (err) {
-        console.log()
-        console.error('Failed to load articles:', err);
-        error = 'Не удалось загрузить статьи';
-    }
+  let articles: CardArticle[] = [];
+  let error = null;
 
-    if (error) {
-        return (
-        <div className="container mx-auto py-8 px-4 text-center text-red-500">
-            {error}
-        </div>
-        );
-    }
+  try {
+    const data = await articleService.getAll();
+    const filteredData = query
+      ? data.filter(
+          (a) =>
+            a.title.toLowerCase().includes(query) ||
+            a.about.toLowerCase().includes(query),
+        )
+      : data;
 
+    articles = filteredData.map((article: ApiArticle) => ({
+      title: article.title,
+      author: article.author,
+      description: article.about,
+      imageUrl: article.previewPhotoLink || "/placeholder-image.jpg",
+      readTime: 5,
+      link: article.link,
+      starCount: article.starCount,
+      isStarred: false,
+    }));
+  } catch (err) {
+    console.error("Failed to load articles:", err);
+    error = "Не удалось загрузить статьи";
+  }
+
+  if (error) {
     return (
-        <div className="container mx-auto py-8 px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article, index) => (
-            <ArticleCard key={index} {...article} />
-            ))}
-        </div>
-        </div>
+      <div className="container mx-auto py-8 px-4 text-center text-red-500">
+        {error}
+      </div>
     );
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4">
+      {articles.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {articles.map((article, index) => (
+            <ArticleCard key={index} {...article} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center text-custom-secondary mt-12 text-lg">
+          По вашему запросу ничего не найдено.
+        </div>
+      )}
+    </div>
+  );
 }
+
 
 ============================================================
 
@@ -1885,21 +1918,24 @@ body {
 
 
 File: ./frontend/app/components/AuthGuard.tsx
+// frontend/app/components/AuthGuard.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { authService } from "@/app/utils/auth-service";
 
-// ДОБАВЛЕН "/": теперь главная страница доступна всем
 const publicRoutes = ["/", "/login", "/registration", "/forgot-password"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isChecking, setIsChecking] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true); // Сообщаем, что клиентская часть готова
+
     const isAuth = authService.isAuthenticated();
     const isPublicRoute = publicRoutes.includes(pathname);
 
@@ -1909,14 +1945,15 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       isAuth &&
       (pathname === "/login" || pathname === "/registration")
     ) {
-      // Если авторизован, не пускаем только на логин/регу (на главную можно)
       router.replace("/profile");
     } else {
       setIsChecking(false);
     }
   }, [pathname, router]);
 
-  if (isChecking) {
+  // Пока компонент не смонтирован или идет проверка - показываем один и тот же спиннер
+  // Это предотвращает Hydration Error
+  if (!mounted || isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-custom-bg-main">
         <span className="loading loading-spinner loading-lg text-custom-accent"></span>
@@ -2150,6 +2187,7 @@ export default function Home() {
 
 
 File: ./frontend/app/navbar.tsx
+// frontend/app/navbar.tsx
 "use client";
 
 import Link from "next/link";
@@ -2161,58 +2199,48 @@ const Navbar = () => {
   const pathname = usePathname();
   const [clickedItem, setClickedItem] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  // Список роутов, где навбар НЕ должен отображаться
   const publicRoutes = ["/login", "/registration", "/forgot-password"];
-  if (publicRoutes.includes(pathname)) return null;
-  // Применить тему
-  const applyTheme = (dark: boolean) => {
-    if (dark) {
+
+  // 1. Ждем монтирования компонента в браузере
+  useEffect(() => {
+    setMounted(true);
+
+    // Инициализация темы
+    const storedTheme = localStorage.getItem("theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+
+    const shouldBeDark =
+      storedTheme === "dark" || (!storedTheme && systemPrefersDark);
+
+    setIsDark(shouldBeDark);
+    if (shouldBeDark) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-  };
-
-  // Инициализация темы при загрузке
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "dark") {
-      setIsDark(true);
-      applyTheme(true);
-    } else if (storedTheme === "light") {
-      setIsDark(false);
-      applyTheme(false);
-    } else {
-      // Нет сохранённой темы – используем системные настройки
-      const systemPrefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)",
-      ).matches;
-      setIsDark(systemPrefersDark);
-      applyTheme(systemPrefersDark);
-    }
-
-    // Следим за изменением системной темы, если пользователь не выбрал вручную
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      const stored = localStorage.getItem("theme");
-      if (!stored) {
-        // Нет сохранённого выбора – следуем за системой
-        setIsDark(e.matches);
-        applyTheme(e.matches);
-      }
-    };
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  // Переключение темы по кнопке
+  // 2. Если мы еще на сервере (hydration), ничего не рендерим, чтобы избежать Error #300
+  if (!mounted) return null;
+
+  // Если это страница логина или регистрации - скрываем навбар
+  if (publicRoutes.includes(pathname)) return null;
+
   const toggleTheme = () => {
-    setIsDark((prev) => {
-      const newTheme = !prev;
-      localStorage.setItem("theme", newTheme ? "dark" : "light");
-      applyTheme(newTheme);
-      return newTheme;
-    });
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    localStorage.setItem("theme", newTheme ? "dark" : "light");
+
+    if (newTheme) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   };
 
   const menuItems = [
@@ -2228,9 +2256,9 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-12 custom-bg-secondary backdrop-blur-sm bg-opacity-90 z-50 flex items-center justify-center gap-3 sm:gap-6 px-2 sm:px-4">
-      {/* Декоративная линия */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-linear-to-r from-transparent via-custom-accent to-transparent" />
+    <nav className="fixed top-0 left-0 w-full h-12 bg-custom-bg-secondary backdrop-blur-sm bg-opacity-90 z-50 flex items-center justify-center gap-3 sm:gap-6 px-2 sm:px-4 shadow-sm">
+      {/* Декоративная линия сверху */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-20 h-0.5 bg-gradient-to-r from-transparent via-custom-accent to-transparent" />
 
       {menuItems.map((item) => {
         const Icon = item.icon;
@@ -2247,23 +2275,25 @@ const Navbar = () => {
             <Icon
               size={20}
               className={`
-                                transition-all duration-300
-                                ${isActive ? "text-custom-accent" : "text-custom-secondary group-hover:text-custom-main group-hover:scale-110"}
-                                ${isClicked ? "scale-125 text-custom-accent" : ""}
-                            `}
+                transition-all duration-300
+                ${isActive ? "text-custom-accent" : "text-custom-secondary group-hover:text-custom-main group-hover:scale-110"}
+                ${isClicked ? "scale-125 text-custom-accent" : ""}
+              `}
             />
             <span
               className={`
-                                hidden sm:inline-block text-sm transition-all duration-300
-                                ${isActive ? "text-custom-main" : "text-custom-secondary group-hover:text-custom-main"}
-                                ${isClicked ? "scale-105" : ""}
-                            `}
+                hidden sm:inline-block text-sm transition-all duration-300
+                ${isActive ? "text-custom-main" : "text-custom-secondary group-hover:text-custom-main"}
+                ${isClicked ? "scale-105" : ""}
+              `}
             >
               {item.name}
             </span>
+
             {isActive && (
               <span className="hidden sm:inline-block ml-1 w-1.5 h-1.5 rounded-full bg-custom-accent animate-pulse" />
             )}
+
             {isClicked && (
               <span className="absolute inset-0 rounded-md bg-custom-accent opacity-20 animate-ping" />
             )}
@@ -2271,21 +2301,18 @@ const Navbar = () => {
         );
       })}
 
-      {/* Блок переключения темы */}
+      {/* Переключатель темы */}
       <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
         <button
           onClick={toggleTheme}
-          className="cursor-pointer p-1 rounded-md transition-all duration-300 hover:scale-110 focus:outline-none"
+          className="cursor-pointer p-1.5 rounded-full hover:bg-custom-secondary/20 transition-all duration-300 focus:outline-none"
           aria-label="Переключить тему"
         >
           {isDark ? (
-            <Sun
-              size={22}
-              className="text-custom-secondary hover:text-custom-main"
-            />
+            <Sun size={20} className="text-yellow-400" />
           ) : (
             <Moon
-              size={22}
+              size={20}
               className="text-custom-secondary hover:text-custom-main"
             />
           )}
@@ -2472,231 +2499,25 @@ export default function LoginPage() {
 
 
 File: ./frontend/app/profile/StudentProfile.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
-import StudentProfileCard from './StudentProfileCard';
-import WorkArea from './StudentWorkArea';
-import { nodes } from './_tree/data';
-import { articleService } from '@/app/utils/article-service';
-import { Article, ArticleRequest, ArticleFormat } from '@/app/utils/types';
-import MyArticles from "./MyArticles";
+import StudentProfileCard from "./StudentProfileCard";
+import WorkArea from "./StudentWorkArea";
+import { nodes } from "./_tree/data";
 
 export default function StudentProfile() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [formData, setFormData] = useState<Omit<ArticleRequest, 'link'>>({
-        title: '',
-        about: '',
-        format: ArticleFormat.MD,
-        previewPhotoLink: '',
-    });
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [articles, setArticles] = useState<Article[]>([]);
-
-    const fetchArticles = async () => {
-        try {
-            const fetchedArticles = await articleService.getAll();
-            setArticles(fetchedArticles);
-        } catch (error) {
-            console.error("Ошибка при загрузке статей:", error);
-        }
-    };
-
-    const handleDeleteArticle = async (id: number) => {
-        try {
-            await articleService.delete(id);
-            fetchArticles();
-        } catch (error) {
-            console.error("Ошибка при удалении статьи:", error);
-        }
-    };
-
-    useEffect(() => {
-        fetchArticles();
-    }, []);
-
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setSelectedFile(file);
-        } else {
-            setSelectedFile(null);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedFile) {
-            alert('Пожалуйста, выберите файл для загрузки');
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            await articleService.createWithFile(formData, selectedFile);
-            setIsModalOpen(false);
-            setFormData({
-                title: '',
-                about: '',
-                format: ArticleFormat.MD,
-                previewPhotoLink: '',
-            });
-            setSelectedFile(null);
-            fetchArticles();
-        } catch (error) {
-            console.error('Ошибка при создании статьи:', error);
-            alert('Не удалось создать статью');
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <>
-            <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen">
-                <div className="w-full lg:w-1/5 mb-4 lg:mb-0 md:mr-8">
-                    <StudentProfileCard />
-                </div>
-                <div className="flex-1">
-                    <WorkArea nodes={nodes} skillPoints={3} />
-                    <MyArticles articles={articles} onDelete={handleDeleteArticle} />
-                </div>
-            </div>
-
-            {!isModalOpen && (
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="fixed bottom-8 right-8 btn btn-primary rounded-button shadow-lg flex items-center gap-2 z-50"
-                >
-                    <Plus size={20} />
-                    <span className="hidden sm:inline">Добавить статью</span>
-                </button>
-            )}
-
-            {isModalOpen && (
-                <div className="backdrop-blur-sm fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-8">
-                    <div className="bg-custom-bg-main rounded-4xl shadow-xl w-full max-w-md">
-                        <div className="flex justify-between items-center p-4 border-b border-custom-secondary">
-                            <h2 className="text-xl font-semibold text-custom-main">Добавить статью</h2>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="text-custom-secondary hover:text-custom-main"
-                            >
-                                <X size={24} className='cursor-pointer'/>
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-                            <div>
-                                <label htmlFor="title" className="block text-custom-main mb-1">
-                                    Заголовок
-                                </label>
-                                <input
-                                    type="text"
-                                    id="title"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full input input-bordered bg-custom-bg-secondary text-custom-main"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="about" className="block text-custom-main mb-1">
-                                    Описание
-                                </label>
-                                <textarea
-                                    id="about"
-                                    name="about"
-                                    value={formData.about}
-                                    onChange={handleInputChange}
-                                    rows={3}
-                                    required
-                                    className="w-full textarea textarea-bordered bg-custom-bg-secondary text-custom-main"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="format" className="block text-custom-main mb-1">
-                                    Формат
-                                </label>
-                                <select
-                                    id="format"
-                                    name="format"
-                                    value={formData.format}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full select select-bordered bg-custom-bg-main text-custom-main cursor-pointer"
-                                >
-                                    <option value={ArticleFormat.MD}>.md</option>
-                                    <option value={ArticleFormat.PDF}>.pdf</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label htmlFor="file" className="block text-custom-main mb-1">
-                                    Файл статьи
-                                </label>
-                                <input
-                                    type="file"
-                                    id="file"
-                                    name="file"
-                                    onChange={handleFileChange}
-                                    required
-                                    className="w-full file-input file-input-primary file-input-bordered bg-custom-bg-secondary text-custom-main"
-                                />
-                                <p className="text-xs text-custom-secondary mt-1">
-                                    Поддерживаемые форматы: .md, .pdf (в зависимости от выбранного формата)
-                                </p>
-                            </div>
-
-                            <div>
-                                <label htmlFor="previewPhotoLink" className="block text-custom-main mb-1">
-                                    Ссылка на превью (опционально)
-                                </label>
-                                <input
-                                    type="url"
-                                    id="previewPhotoLink"
-                                    name="previewPhotoLink"
-                                    value={formData.previewPhotoLink}
-                                    onChange={handleInputChange}
-                                    className="w-full input input-bordered bg-custom-bg-secondary text-custom-main"
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="btn btn-secondary rounded-button"
-                                >
-                                    Отмена
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="btn btn-primary rounded-button"
-                                >
-                                    {isSubmitting ? 'Загрузка...' : 'Добавить статью'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-        </>
-    );
+  return (
+    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen">
+      <div className="w-full lg:w-1/5 mb-4 lg:mb-0 md:mr-8">
+        <StudentProfileCard />
+      </div>
+      <div className="flex-1">
+        <WorkArea nodes={nodes} skillPoints={3} />
+      </div>
+    </div>
+  );
 }
+
 
 ============================================================
 
@@ -2974,101 +2795,109 @@ export default function WorkArea({ tasks, loading, error }: WorkAreaProps) {
 
 
 File: ./frontend/app/profile/TaskCard.tsx
-"use client"
+"use client";
 
-import { useState } from 'react';
-import { Users } from 'lucide-react';
+import { Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import { authService } from "@/app/utils/auth-service";
 
 type TaskCardProps = {
-    title: string;
-    studentsCount: number;
-    description: string;
+  title: string;
+  difficulty: number;
+  description: string;
+  attachedFiles?: string[];
+  rewardStars: number;
 };
 
-const TaskCard = ({ title, studentsCount, description }: TaskCardProps) => {
-    const [files, setFiles] = useState<File[]>([]);
+const TaskCard = ({
+  title,
+  difficulty,
+  description,
+  attachedFiles = [],
+  rewardStars,
+}: TaskCardProps) => {
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) {
-            setFiles(Array.from(e.target.files));
-        }
-    };
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (user && user.roles.length > 0) setUserRole(user.roles[0]);
+    setLoading(false);
+  }, []);
 
-    const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.dataTransfer.files) {
-            setFiles(Array.from(e.dataTransfer.files));
-        }
-    };
+  const renderDifficultyStars = () => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <Star
+          key={i}
+          size={16}
+          className={`inline-block ${i <= difficulty ? "text-custom-accent" : "text-custom-secondary"}`}
+        />,
+      );
+    }
+    return stars;
+  };
 
-    const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-
-    return (
-        <div className="p-4 sm:p-6 bg-custom-bg-secondary rounded-card shadow-2xs">
-            {/* Заголовок задания */}
-            <h2 className="xl:h-[2lh] text-lg sm:text-xl font-bold text-custom-main mb-2 text-center">
-                {title}
-            </h2>
-
-            {/* Информация о выполнении */}
-            <div className="flex items-center justify-center gap-2 mb-3">
-                <Users size={20} className="w-5 h-5 text-custom-accent" />
-                <span className="text-sm sm:text-base text-custom-main">
-                    Выполнение: {studentsCount} студентов
-                </span>
-            </div>
-
-            {/* Описание задания */}
-            <p className="xl:h-[3lh] text-custom-secondary mb-4 line-clamp-3 text-sm sm:text-base">
-                {description}
-            </p>
-
-            {/* Drag & drop область */}
-            <label
-                className="block border border-dashed border-custom-main rounded-2xl p-4 sm:p-6 mb-4 cursor-pointer"
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-            >
-                <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileChange}
-                />
-                <div className="text-center text-custom-main font-medium mb-2 text-sm sm:text-base">
-                    Прикреплённые файлы
-                </div>
-                {files.length > 0 ? (
-                    <ul className="text-custom-main text-xs sm:text-sm">
-                        {files.map((file, index) => (
-                            <li key={index}>{file.name}</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="text-custom-secondary text-xs sm:text-sm">
-                        Перетащите файлы или кликните, чтобы выбрать
-                    </p>
-                )}
-            </label>
-
-            {/* Контейнер для кнопок: вертикально на мобильных, горизонтально на больших */}
-            <div className="flex flex-col 2xl:flex-row gap-2">
-                <button className="flex-1 btn btn-secondary rounded-button shadow-none px-4 py-2 text-sm sm:text-base">
-                    Редактировать
-                </button>
-                <button className="flex-1 btn btn-primary rounded-button shadow-none px-4 py-2 text-sm sm:text-base">
-                    Наградить
-                </button>
-            </div>
-        </div>
+  const handleStartTask = () => {
+    alert(
+      "Отлично! Задание добавлено в ваш профиль. Можете приступать к выполнению.",
     );
+  };
+
+  return (
+    <div className="p-4 sm:p-6 bg-custom-bg-secondary rounded-card shadow-2xs">
+      <h2 className="xl:h-[2lh] text-lg sm:text-xl font-bold text-custom-main mb-2 text-center">
+        {title}
+      </h2>
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <span className="text-sm sm:text-base text-custom-main">
+          Сложность:
+        </span>
+        <div className="flex gap-0.5">{renderDifficultyStars()}</div>
+      </div>
+      <p className="xl:h-[3lh] text-custom-secondary mb-4 line-clamp-3 text-sm sm:text-base">
+        {description}
+      </p>
+
+      <div className="block border border-dashed border-custom-main rounded-2xl p-4 sm:p-6 mb-4">
+        <div className="text-center text-custom-main font-medium mb-2 text-sm sm:text-base">
+          Прикреплённые файлы
+        </div>
+        {attachedFiles.length > 0 ? (
+          <ul className="text-custom-main text-xs sm:text-sm">
+            {attachedFiles.map((fileName, index) => (
+              <li key={index}>{fileName}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-custom-secondary text-xs sm:text-sm text-center">
+            Нет прикреплённых файлов
+          </p>
+        )}
+      </div>
+
+      <div className="flex justify-between items-center gap-4">
+        {!loading && userRole === "ROLE_STUDENT" && (
+          <button
+            onClick={handleStartTask}
+            className="btn btn-primary rounded-button shadow-none px-4 py-2 text-sm sm:text-base hover:scale-105 transition"
+          >
+            Начать
+          </button>
+        )}
+        <div className="flex items-center gap-1 text-custom-main ml-auto">
+          <span className="text-sm sm:text-base font-medium">Награда</span>
+          <span className="text-sm sm:text-base font-bold">{rewardStars}</span>
+          <Star size={16} className="text-custom-accent" />
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default TaskCard;
+
 
 ============================================================
 
@@ -3607,18 +3436,12 @@ import {
   LogOut,
   Plus,
   X,
-  BookOpen,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/utils/auth-service";
 import { taskService } from "@/app/utils/task-service";
-import {
-  ArticleRequest,
-  ArticleFormat,
-  Article,
-} from "@/app/utils/types";
+import { ArticleRequest, ArticleFormat, Article } from "@/app/utils/types";
 import { articleService } from "@/app/utils/article-service";
-import MyArticles from "./MyArticles";
 
 type TaskStat = {
   id: string;
@@ -3626,7 +3449,6 @@ type TaskStat = {
   completionPercent: number;
   participatingStudents: number;
 };
-
 type MentorData = {
   firstName: string;
   lastName: string;
@@ -3639,9 +3461,6 @@ export default function MentorProfileCard() {
   const router = useRouter();
   const [mentorData, setMentorData] = useState<MentorData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [articles, setArticles] = useState<Article[]>([]);
-
-  // ... твои существующие стейты для заданий ...
   const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   const [articleFormData, setArticleFormData] = useState<
     Omit<ArticleRequest, "link">
@@ -3651,46 +3470,25 @@ export default function MentorProfileCard() {
     format: ArticleFormat.MD,
     previewPhotoLink: "",
   });
-  const [selectedArticleFile, setSelectedArticleFile] =
-    useState<File | null>(null);
-  const [isSubmittingArticle, setIsSubmittingArticle] = useState(false);
-
-  const fetchArticles = async () => {
-    try {
-      const user = authService.getCurrentUser();
-      if (!user) return;
-      const data = await articleService.getAll();
-      const myArticles = data.filter((article) => article.authorId === user.id);
-      setArticles(myArticles);
-    } catch (error) {
-      console.error("Ошибка загрузки статей:", error);
-    }
-  };
+  const [selectedArticleFile, setSelectedArticleFile] = useState<File | null>(
+    null,
+  );
 
   useEffect(() => {
     const loadData = async () => {
       const user = authService.getCurrentUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) return router.push("/login");
 
       try {
-        // Забираем все таски
         const allTasks = await taskService.getAllTasks();
-        // Фильтруем только те, которые создал этот ментор
         const myTasks = allTasks.filter((t) => t.author.userId === user.id);
-
         let totalUniqueStudents = new Set<number>();
         const tasksStats: TaskStat[] = [];
 
-        // Подсчитываем статистику для каждой таски
         for (const task of myTasks) {
           try {
             const solutions = await taskService.getTaskSolutions(task.id);
-
             solutions.forEach((s) => totalUniqueStudents.add(s.user.userId));
-
             const participatingStudents = new Set(
               solutions.map((s) => s.user.userId),
             ).size;
@@ -3701,7 +3499,6 @@ export default function MentorProfileCard() {
               solutions.length > 0
                 ? Math.round((approved / solutions.length) * 100)
                 : 0;
-
             tasksStats.push({
               id: String(task.id),
               title: task.title,
@@ -3709,7 +3506,6 @@ export default function MentorProfileCard() {
               participatingStudents,
             });
           } catch (e) {
-            // Если нет решений, просто добавляем пустую статистику
             tasksStats.push({
               id: String(task.id),
               title: task.title,
@@ -3718,13 +3514,12 @@ export default function MentorProfileCard() {
             });
           }
         }
-
         setMentorData({
           firstName: user.name || "Ментор",
           lastName: user.lastName || "",
           tasksCount: myTasks.length,
           studentsCount: totalUniqueStudents.size,
-          tasks: tasksStats.slice(0, 3), // Показываем только 3 последние в профиле
+          tasks: tasksStats.slice(0, 3),
         });
       } catch (error) {
         console.error("Ошибка загрузки профиля ментора:", error);
@@ -3732,9 +3527,7 @@ export default function MentorProfileCard() {
         setLoading(false);
       }
     };
-
     loadData();
-    fetchArticles();
   }, [router]);
 
   const handleLogout = () => {
@@ -3755,7 +3548,7 @@ export default function MentorProfileCard() {
         previewPhotoLink: "",
       });
       setSelectedArticleFile(null);
-      fetchArticles();
+      window.location.reload();
     } catch (error) {
       alert("Ошибка при загрузке статьи");
     }
@@ -3770,12 +3563,11 @@ export default function MentorProfileCard() {
   }
 
   return (
-    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8">
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-6 min-h-[90vh]">
       <div className="mt-4">
         <div className="flex justify-center mb-4">
           <User size={120} className="text-custom-accent" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
           {mentorData.firstName} {mentorData.lastName}
         </h2>
@@ -3801,7 +3593,6 @@ export default function MentorProfileCard() {
         <h3 className="text-xl font-semibold text-custom-main mb-2">
           Сводка заданий
         </h3>
-
         {mentorData.tasks.length > 0 ? (
           mentorData.tasks.map((task) => (
             <div
@@ -3827,22 +3618,27 @@ export default function MentorProfileCard() {
             Вы еще не создали заданий.
           </p>
         )}
-
         <button
           onClick={() => router.push("/tasks")}
           className="self-center btn btn-primary w-full md:w-3/4 rounded-button mt-2"
         >
-          <ListTodo />
-          Все задания
+          <ListTodo /> Все задания
         </button>
       </div>
 
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+      <div className="mt-auto w-full flex flex-col items-center gap-3 pb-4">
         <button
           onClick={() => setIsArticleModalOpen(true)}
-          className="btn btn-secondary rounded-full shadow-2xl flex items-center gap-2 px-6"
+          className="btn btn-secondary w-full md:w-3/4 rounded-button flex items-center justify-center gap-2"
         >
-          <Plus size={20} /> Написать статью
+          <Plus size={18} /> Написать статью
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary bg-transparent w-full md:w-3/4 rounded-button flex items-center justify-center gap-2 text-custom-main"
+        >
+          <LogOut size={18} /> Выйти
         </button>
       </div>
 
@@ -3911,14 +3707,6 @@ export default function MentorProfileCard() {
           </div>
         </div>
       )}
-
-      <button
-        onClick={handleLogout}
-        className="btn btn-secondary bg-transparent w-full md:w-3/4 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
     </div>
   );
 }
@@ -4097,27 +3885,26 @@ export default function HRProfileCard() {
   };
 
   return (
-    <div className="flex flex-col justify-between items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8 lg:h-[90vh]">
-      {/* Шапка */}
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8 min-h-[90vh]">
       <div className="mt-8 md:mt-16">
         <div className="flex justify-center mb-4">
           <User size={120} className="text-custom-accent" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
           {name} {lastName}
         </h2>
-
         <p className="text-center text-custom-secondary mb-4">HR</p>
       </div>
-      {/* Кнопка выхода */}
-      <button
-        onClick={handleLogout}
-        className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
+
+      <div className="mt-auto w-full pb-4 flex flex-col items-center">
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 text-custom-main"
+        >
+          <LogOut size={18} />
+          Выйти
+        </button>
+      </div>
     </div>
   );
 }
@@ -4127,40 +3914,12 @@ export default function HRProfileCard() {
 
 
 File: ./frontend/app/profile/HRProfile.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import HRProfileCard from './HRProfileCard';
-import HRWorkArea from './HRWorkArea';
-import { articleService } from '../utils/article-service';
-import { Article } from '../utils/types';
-import MyArticles from './MyArticles';
+import HRProfileCard from "./HRProfileCard";
+import HRWorkArea from "./HRWorkArea";
 
 export default function HRProfile() {
-  const [articles, setArticles] = useState<Article[]>([]);
-
-  const fetchArticles = async () => {
-    try {
-      const fetchedArticles = await articleService.getAll();
-      setArticles(fetchedArticles);
-    } catch (error) {
-      console.error('Ошибка при загрузке статей:', error);
-    }
-  };
-
-  const handleDeleteArticle = async (id: number) => {
-    try {
-      await articleService.delete(id);
-      fetchArticles();
-    } catch (error) {
-      console.error('Ошибка при удалении статьи:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchArticles();
-  }, []);
-
   return (
     <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen">
       <div className="w-full lg:w-1/5 mb-4 lg:mb-0 md:mr-8">
@@ -4168,11 +3927,11 @@ export default function HRProfile() {
       </div>
       <div className="flex-1">
         <HRWorkArea />
-        <MyArticles articles={articles} onDelete={handleDeleteArticle} />
       </div>
     </div>
   );
 }
+
 
 ============================================================
 
@@ -4219,61 +3978,71 @@ export default MyArticles;
 
 
 File: ./frontend/app/profile/HRUserCard.tsx
-import { User } from "lucide-react";
+import { User, Mail } from "lucide-react";
 import { useState } from "react";
 
 export interface UserShortInfo {
-    userId: number;
-    username: string;
-    name: string;
-    lastName: string;
+  userId: number;
+  username: string;
+  name: string;
+  lastName: string;
 }
 
 interface HRUserCardProps {
-    user: UserShortInfo;
-    onRemove: (userId: number) => Promise<void>;
+  user: UserShortInfo;
+  onRemove: (userId: number) => Promise<void>;
 }
 
 export default function HRUserCard({ user, onRemove }: HRUserCardProps) {
-    const email = user.username;
-    const [isRemoving, setIsRemoving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const email = user.username;
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleRemove = async () => {
-        setIsRemoving(true);
-        setError(null);
-        try {
-            await onRemove(user.userId);
-        } catch (err) {
-            setError('Не удалось удалить из избранного');
-            console.error(err);
-        } finally {
-            setIsRemoving(false);
-        }
-    };
+  const handleRemove = async () => {
+    setIsRemoving(true);
+    setError(null);
+    try {
+      await onRemove(user.userId);
+    } catch (err) {
+      setError("Не удалось удалить из избранного");
+      console.error(err);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
 
-    return (
-        <div className="p-4 sm:p-6 bg-custom-bg-secondary rounded-card shadow-2xs text-center">
-            <div className="flex justify-center mb-4">
-                <User size={48} className="text-custom-accent" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-custom-main mb-1">
-                {user.name} {user.lastName}
-            </h2>
-            <p className="text-sm sm:text-base text-custom-secondary mb-4">
-                {email}
-            </p>
-            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-            <button 
-                className="btn btn-primary rounded-button"
-                onClick={handleRemove}
-                disabled={isRemoving}
-            >
-                {isRemoving ? 'Удаление...' : 'Убрать из избранного'}
-            </button>
-        </div>
-    );
+  return (
+    <div className="p-4 sm:p-6 bg-custom-bg-secondary rounded-card shadow-2xs text-center flex flex-col">
+      <div className="flex justify-center mb-4 mt-2">
+        <User size={56} className="text-custom-accent" />
+      </div>
+      <h2 className="text-lg sm:text-xl font-bold text-custom-main mb-2">
+        {user.name} {user.lastName}
+      </h2>
+      <div className="flex items-center justify-center gap-2 text-sm text-custom-secondary mb-6">
+        <Mail size={16} />
+        <a
+          href={`mailto:${email}`}
+          className="hover:text-custom-main transition"
+        >
+          {email}
+        </a>
+      </div>
+
+      <div className="mt-auto">
+        {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+        <button
+          className="btn btn-secondary rounded-button w-full"
+          onClick={handleRemove}
+          disabled={isRemoving}
+        >
+          {isRemoving ? "Удаление..." : "Убрать из избранного"}
+        </button>
+      </div>
+    </div>
+  );
 }
+
 
 ============================================================
 
@@ -4281,72 +4050,175 @@ export default function HRUserCard({ user, onRemove }: HRUserCardProps) {
 File: ./frontend/app/profile/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import FilterPanel, { FilterCategory } from "../components/FilterPanel";
+import LeaderboardRow from "../leaderboard/LeaderboardRow";
+import { hrService } from "@/app/utils/hr-service";
 import { authService } from "@/app/utils/auth-service";
-import { articleService } from "@/app/utils/article-service";
-import MentorProfile from "./MentorProfile";
-import StudentProfile from "./StudentProfile";
-import HRProfile from "./HRProfile";
-import { Article } from "../utils/types";
+import { LeaderboardEntry as ApiLeaderboardEntry } from "@/app/utils/types";
 
-export default function ProfilePage() {
-  const router = useRouter();
-  const [userRole, setUserRole] = useState<string | null>(null);
+type DisplayEntry = {
+  userId: number;
+  username: string;
+  rank: number;
+  name: string;
+  level: number;
+  completedTasks: number;
+  university: string;
+};
+
+const LeaderboardPage = () => {
+  const [filterCategories, setFilterCategories] = useState<FilterCategory[]>([
+    {
+      name: "Университет",
+      values: ["КФ МГТУ им. Н.Э. Баумана", "МГУ", "НИУ ВШЭ"],
+      selected: [],
+    },
+  ]);
+
+  const [entries, setEntries] = useState<ApiLeaderboardEntry[]>([]);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [articles, setArticles] = useState<Article[]>([]);
-
-  const fetchArticles = async () => {
-    try {
-      const fetchedArticles = await articleService.getAll();
-      setArticles(fetchedArticles);
-    } catch (error) {
-      console.error("Ошибка при загрузке статей:", error);
-    }
-  };
-
-  const handleDeleteArticle = async (id: number) => {
-    try {
-      await articleService.delete(id);
-      fetchArticles();
-    } catch (error) {
-      console.error("Ошибка при удалении статьи:", error);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      router.push("/login");
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [leaderboardData, favoritesData] = await Promise.all([
+          hrService.getLeaderboard(),
+          hrService.getFavorites().catch(() => []),
+        ]);
+        setEntries(leaderboardData);
+        setFavorites(new Set(favoritesData.map((f) => f.userId)));
+        setError(null);
+      } catch (err) {
+        console.error("Failed to load data:", err);
+        setError("Не удалось загрузить данные");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const getUniversityForUser = (id: number) => {
+    if (id % 3 === 0) return "МГУ";
+    if (id % 5 === 0) return "НИУ ВШЭ";
+    return "КФ МГТУ им. Н.Э. Баумана";
+  };
+
+  const displayEntries: DisplayEntry[] = entries
+    .map((entry, idx) => ({
+      userId: entry.userId,
+      username: entry.username,
+      rank: idx + 1,
+      name: `${entry.name} ${entry.lastName}`,
+      level: entry.totalRate,
+      completedTasks: Math.floor(entry.totalRate / 300) + 1,
+      university: getUniversityForUser(entry.userId),
+    }))
+    .filter((entry) => {
+      const universityCategory = filterCategories.find(
+        (cat) => cat.name === "Университет",
+      );
+      if (!universityCategory || universityCategory.selected.length === 0)
+        return true;
+      return universityCategory.selected.includes(entry.university);
+    });
+
+  const handleToggleFavorite = async (userId: number) => {
+    const currentUser = authService.getCurrentUser();
+    const isHr = currentUser?.roles.includes("ROLE_HR") ?? false;
+
+    if (!isHr) {
+      alert("Только HR могут управлять избранным. Зайдите под аккаунтом HR.");
       return;
     }
 
-    const user = authService.getCurrentUser();
-    if (user && user.roles.length > 0) {
-      setUserRole(user.roles[0]);
-    } else {
-      router.push("/login");
+    const isFavorite = favorites.has(userId);
+    try {
+      if (isFavorite) {
+        await hrService.removeFavorite(userId);
+        setFavorites((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+      } else {
+        await hrService.addFavorite(userId);
+        setFavorites((prev) => {
+          const newSet = new Set(prev);
+          newSet.add(userId);
+          return newSet;
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle favorite:", err);
     }
-    setLoading(false);
-  }, [router]);
+  };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  if (loading)
+    return (
+      <div className="mx-4 sm:mx-8 lg:mx-16 flex justify-center items-center min-h-screen">
+        <span className="loading loading-spinner loading-lg text-custom-accent"></span>
+      </div>
+    );
+  if (error)
+    return (
+      <div className="mx-4 sm:mx-8 lg:mx-16 flex justify-center items-center min-h-screen">
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
 
-  switch (userRole) {
-    case "ROLE_MENTOR":
-      return <MentorProfile />;
-    case "ROLE_STUDENT":
-      return (
-        <StudentProfile
+  return (
+    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8 pb-12">
+      <div className="w-full lg:w-1/5 mb-4 lg:mb-0">
+        <FilterPanel
+          categories={filterCategories}
+          onFilterChange={setFilterCategories}
         />
-      );
-    case "ROLE_HR":
-      return <HRProfile />;
-    default:
-      return <div>Unknown user role</div>;
-  }
-}
+      </div>
+      <div className="flex-1">
+        <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg overflow-x-auto">
+          <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium min-w-[700px]">
+            <div className="w-8 sm:w-10 text-center">№</div>
+            <div className="flex-1 min-w-35">Студент</div>
+            <div className="w-20 text-center">Очки</div>
+            <div className="w-24 text-center">Решено</div>
+            <div className="flex-1 min-w-30">ВУЗ</div>
+            <div className="w-36 text-center">Действие</div>
+          </div>
+          {displayEntries.length > 0 ? (
+            <div className="divide-y divide-custom-secondary/10 min-w-[700px]">
+              {displayEntries.map((entry) => (
+                <div key={entry.userId} className="my-4">
+                  <LeaderboardRow
+                    rank={entry.rank}
+                    name={entry.name}
+                    level={entry.level}
+                    completedTasks={entry.completedTasks}
+                    university={entry.university}
+                    isFavorite={favorites.has(entry.userId)}
+                    onToggleFavorite={() => handleToggleFavorite(entry.userId)}
+                    email={entry.username}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-custom-secondary py-8">
+              Нет студентов, соответствующих фильтрам.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LeaderboardPage;
+
 
 ============================================================
 
@@ -4433,11 +4305,7 @@ import { authService } from "@/app/utils/auth-service";
 import { taskService } from "@/app/utils/task-service";
 import { skillService } from "@/app/utils/skill-service";
 
-type Achievement = {
-  id: string;
-  name: string;
-  short: string;
-};
+type Achievement = { id: string; name: string; short: string };
 
 type StudentData = {
   firstName: string;
@@ -4458,26 +4326,17 @@ export default function StudentProfileCard() {
   useEffect(() => {
     const loadData = async () => {
       const user = authService.getCurrentUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) return router.push("/login");
 
       try {
-        // Грузим очки навыков и список перков
         const [skillsTree, allPerks] = await Promise.all([
           taskService.getMySkills(),
           skillService.getAllPerks(),
         ]);
 
         const rate = skillsTree.rate || 0;
-
-        // Простая логика уровней: каждые 1000 очков = 1 уровень
         const level = Math.floor(rate / 1000) + 1;
         const xp = rate % 1000;
-        const maxXp = 1000;
-
-        // Мапим открытые перки в красивые достижения
         const unlocked = skillsTree.unlockedPerks || [];
         const achievements = unlocked.map((perkId) => {
           const perk = allPerks.find((p) => p.id === perkId);
@@ -4492,19 +4351,18 @@ export default function StudentProfileCard() {
           firstName: user.name || "Студент",
           lastName: user.lastName || "",
           university: "КФ МГТУ им. Н.Э. Баумана",
-          stars: rate, // Общий рейт = звезды
+          stars: rate,
           level,
           xp,
-          maxXp,
+          maxXp: 1000,
           achievements,
         });
       } catch (error) {
-        console.error("Ошибка загрузки профиля студента:", error);
+        console.error("Ошибка загрузки профиля:", error);
       } finally {
         setLoading(false);
       }
     };
-
     loadData();
   }, [router]);
 
@@ -4524,16 +4382,14 @@ export default function StudentProfileCard() {
   const progressPercent = (studentData.xp / studentData.maxXp) * 100;
 
   return (
-    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8">
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-6 min-h-[90vh]">
       <div className="mt-4">
         <div className="flex justify-center mb-4">
           <User size={120} className="text-custom-accent" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
           {studentData.firstName} {studentData.lastName}
         </h2>
-
         <p className="text-center text-custom-secondary mb-4">
           {studentData.university}
         </p>
@@ -4557,7 +4413,6 @@ export default function StudentProfileCard() {
             />
           </div>
         </div>
-
         <p className="text-center text-custom-secondary text-sm">
           {studentData.xp} / {studentData.maxXp} XP
         </p>
@@ -4567,7 +4422,6 @@ export default function StudentProfileCard() {
         <h3 className="text-2xl font-semibold text-custom-main mb-4">
           Открытые навыки
         </h3>
-
         <div className="flex flex-wrap justify-center gap-6 mb-6">
           {studentData.achievements.length > 0 ? (
             studentData.achievements.map((ach) => (
@@ -4586,23 +4440,25 @@ export default function StudentProfileCard() {
             </p>
           )}
         </div>
-
-        <button
-          onClick={() => router.push("/wiki")}
-          className="btn btn-primary w-3/4 md:w-1/2 rounded-button"
-        >
-          <Newspaper size={18} />
-          Ваши статьи
-        </button>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
+      <div className="mt-auto w-full flex flex-col items-center gap-3 pb-4">
+        <button
+          onClick={() => router.push("/wiki")}
+          className="btn btn-primary w-full md:w-3/4 rounded-button"
+        >
+          <Newspaper size={18} />
+          Читать Wiki
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary bg-transparent w-full md:w-3/4 rounded-button flex items-center justify-center gap-2 text-custom-main"
+        >
+          <LogOut size={18} />
+          Выйти
+        </button>
+      </div>
     </div>
   );
 }
@@ -4614,67 +4470,85 @@ export default function StudentProfileCard() {
 File: ./frontend/app/leaderboard/LeaderboardRow.tsx
 "use client";
 
-import { User } from "lucide-react";
+import { User, Mail, Github } from "lucide-react";
 
-type LeaderboardRowProps = {
-    rank: number;
-    name: string;
-    level: string | number;
-    completedTasks: number;
-    university: string;
-    isFavorite: boolean;
-    onToggleFavorite?: () => void;
-};
+interface LeaderboardRowProps {
+  rank: number;
+  name: string;
+  level: string | number;
+  completedTasks: number;
+  university: string;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  email: string;
+}
 
 const LeaderboardRow = ({
-    rank,
-    name,
-    level,
-    completedTasks,
-    university,
-    isFavorite,
-    onToggleFavorite,
+  rank,
+  name,
+  level,
+  completedTasks,
+  university,
+  isFavorite,
+  onToggleFavorite,
+  email,
 }: LeaderboardRowProps) => {
-    return (
-        <div className="flex flex-wrap items-center gap-3 p-3 sm:p-1 bg-custom-bg-secondary rounded-3xl shadow-sm border border-custom-secondary/20 hover:shadow-md transition-shadow">
-            {/* Rank */}
-            <div className="w-8 sm:w-10 text-center font-bold text-custom-main">
-                {rank}
-            </div>
-
-            {/* User Icon & Name */}
-            <div className="flex items-center gap-2 flex-1 min-w-35">
-                <User size={18} className="text-custom-accent shrink-0" />
-                <span className="text-custom-main font-medium truncate">{name}</span>
-            </div>
-
-            {/* Level */}
-            <div className="w-20 text-center text-custom-secondary text-sm sm:text-base">
-                {level}
-            </div>
-
-            {/* Completed Tasks */}
-            <div className="w-24 text-center text-custom-main font-medium text-sm sm:text-base">
-                {completedTasks}
-            </div>
-
-            {/* University */}
-            <div className="flex-1 min-w-30 text-custom-secondary text-sm sm:text-base truncate">
-                {university}
-            </div>
-
-            {/* Toggle Favorite Button */}
-            <button
-                onClick={onToggleFavorite}
-                className={`btn btn-primary rounded-button px-3 py-1 text-sm sm:text-base shadow-none min-w-1/10 ${isFavorite ? "bg-transparent" : ""}`}
-            >
-                {isFavorite ? "Удалить" : "Связаться"}
-            </button>
+  return (
+    <div className="flex flex-col gap-2 p-3 sm:p-4 bg-custom-bg-secondary rounded-3xl shadow-sm border border-custom-secondary/20 hover:shadow-md transition-shadow">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="w-8 sm:w-10 text-center font-bold text-custom-main">
+          {rank}
         </div>
-    );
+
+        <div className="flex items-center gap-2 flex-1 min-w-35">
+          <User size={18} className="text-custom-accent shrink-0" />
+          <span className="text-custom-main font-medium truncate">{name}</span>
+        </div>
+
+        <div className="w-20 text-center text-custom-secondary text-sm sm:text-base">
+          {level}
+        </div>
+
+        <div className="w-24 text-center text-custom-main font-medium text-sm sm:text-base">
+          {completedTasks}
+        </div>
+
+        <div className="flex-1 min-w-30 text-custom-secondary text-sm sm:text-base truncate">
+          {university}
+        </div>
+
+        <button
+          onClick={onToggleFavorite}
+          className={`btn btn-primary rounded-button px-3 py-1 text-sm sm:text-base shadow-none w-36 ${
+            isFavorite
+              ? "bg-transparent border border-custom-accent text-custom-accent"
+              : ""
+          }`}
+        >
+          {isFavorite ? "Скрыть" : "Связаться"}
+        </button>
+      </div>
+
+      {isFavorite && (
+        <div className="flex flex-wrap items-center gap-6 ml-0 sm:ml-14 mt-2 text-sm text-custom-main p-3 bg-custom-bg-main rounded-xl border border-custom-secondary/20">
+          <div className="flex items-center gap-2">
+            <Mail size={16} className="text-custom-accent" />
+            <a href={`mailto:${email}`} className="hover:underline">
+              {email}
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <Github size={16} className="text-custom-accent" />
+            <span className="opacity-70">github.com/{email.split("@")[0]}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default LeaderboardRow;
+
 
 ============================================================
 
@@ -4691,6 +4565,7 @@ import { LeaderboardEntry as ApiLeaderboardEntry } from "@/app/utils/types";
 
 type DisplayEntry = {
   userId: number;
+  username: string;
   rank: number;
   name: string;
   level: number;
@@ -4737,7 +4612,6 @@ const LeaderboardPage = () => {
     setFilterCategories(newCategories);
   };
 
-  // Привязываем ВУЗ жестко к ID, чтобы при ререндере он не менялся
   const getUniversityForUser = (id: number) => {
     if (id % 3 === 0) return "МГУ";
     if (id % 5 === 0) return "НИУ ВШЭ";
@@ -4747,10 +4621,11 @@ const LeaderboardPage = () => {
   const displayEntries: DisplayEntry[] = entries
     .map((entry, idx) => ({
       userId: entry.userId,
+      username: entry.username || "no-email@example.com",
       rank: idx + 1,
       name: `${entry.name} ${entry.lastName}`,
       level: entry.totalRate,
-      completedTasks: Math.floor(entry.totalRate / 300) + 1, // Генерация количества задач на основе рейтинга
+      completedTasks: Math.floor(entry.totalRate / 300) + 1,
       university: getUniversityForUser(entry.userId),
     }))
     .filter((entry) => {
@@ -4767,7 +4642,7 @@ const LeaderboardPage = () => {
     const isHr = currentUser?.roles.includes("ROLE_HR") ?? false;
 
     if (!isHr) {
-      alert("Только HR могут управлять избранным. Зайдите под аккаунтом HR.");
+      alert("Только HR могут управлять избранным.");
       return;
     }
 
@@ -4801,16 +4676,8 @@ const LeaderboardPage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="mx-4 sm:mx-8 lg:mx-16 flex justify-center items-center min-h-screen">
-        <div className="text-center text-red-500">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8">
+    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8 pb-12">
       <div className="w-full lg:w-1/5 mb-4 lg:mb-0">
         <FilterPanel
           categories={filterCategories}
@@ -4819,37 +4686,32 @@ const LeaderboardPage = () => {
       </div>
 
       <div className="flex-1">
-        <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg">
-          <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium">
+        <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg overflow-x-auto">
+          <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium min-w-[700px]">
             <div className="w-8 sm:w-10 text-center">№</div>
             <div className="flex-1 min-w-35">Студент</div>
             <div className="w-20 text-center">Очки</div>
             <div className="w-24 text-center">Решено</div>
             <div className="flex-1 min-w-30">ВУЗ</div>
-            <div className="w-24 text-center">Действие</div>
+            <div className="w-36 text-center">Действие</div>
           </div>
 
-          {displayEntries.length > 0 ? (
-            <div className="divide-y divide-custom-secondary/10">
-              {displayEntries.map((entry) => (
-                <div key={entry.userId} className="my-4">
-                  <LeaderboardRow
-                    rank={entry.rank}
-                    name={entry.name}
-                    level={entry.level}
-                    completedTasks={entry.completedTasks}
-                    university={entry.university}
-                    isFavorite={favorites.has(entry.userId)}
-                    onToggleFavorite={() => handleToggleFavorite(entry.userId)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-custom-secondary py-8">
-              Нет студентов, соответствующих фильтрам.
-            </div>
-          )}
+          <div className="divide-y divide-custom-secondary/10 min-w-[700px]">
+            {displayEntries.map((entry) => (
+              <div key={entry.userId} className="my-4">
+                <LeaderboardRow
+                  rank={entry.rank}
+                  name={entry.name}
+                  level={entry.level}
+                  completedTasks={entry.completedTasks}
+                  university={entry.university}
+                  isFavorite={favorites.has(entry.userId)}
+                  onToggleFavorite={() => handleToggleFavorite(entry.userId)}
+                  email={entry.username}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
