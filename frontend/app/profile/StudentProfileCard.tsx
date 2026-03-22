@@ -7,11 +7,7 @@ import { authService } from "@/app/utils/auth-service";
 import { taskService } from "@/app/utils/task-service";
 import { skillService } from "@/app/utils/skill-service";
 
-type Achievement = {
-  id: string;
-  name: string;
-  short: string;
-};
+type Achievement = { id: string; name: string; short: string };
 
 type StudentData = {
   firstName: string;
@@ -32,26 +28,17 @@ export default function StudentProfileCard() {
   useEffect(() => {
     const loadData = async () => {
       const user = authService.getCurrentUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) return router.push("/login");
 
       try {
-        // Грузим очки навыков и список перков
         const [skillsTree, allPerks] = await Promise.all([
           taskService.getMySkills(),
           skillService.getAllPerks(),
         ]);
 
         const rate = skillsTree.rate || 0;
-
-        // Простая логика уровней: каждые 1000 очков = 1 уровень
         const level = Math.floor(rate / 1000) + 1;
         const xp = rate % 1000;
-        const maxXp = 1000;
-
-        // Мапим открытые перки в красивые достижения
         const unlocked = skillsTree.unlockedPerks || [];
         const achievements = unlocked.map((perkId) => {
           const perk = allPerks.find((p) => p.id === perkId);
@@ -66,19 +53,18 @@ export default function StudentProfileCard() {
           firstName: user.name || "Студент",
           lastName: user.lastName || "",
           university: "КФ МГТУ им. Н.Э. Баумана",
-          stars: rate, // Общий рейт = звезды
+          stars: rate,
           level,
           xp,
-          maxXp,
+          maxXp: 1000,
           achievements,
         });
       } catch (error) {
-        console.error("Ошибка загрузки профиля студента:", error);
+        console.error("Ошибка загрузки профиля:", error);
       } finally {
         setLoading(false);
       }
     };
-
     loadData();
   }, [router]);
 
@@ -98,16 +84,14 @@ export default function StudentProfileCard() {
   const progressPercent = (studentData.xp / studentData.maxXp) * 100;
 
   return (
-    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8">
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-6 min-h-[90vh]">
       <div className="mt-4">
         <div className="flex justify-center mb-4">
           <User size={120} className="text-custom-accent" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
           {studentData.firstName} {studentData.lastName}
         </h2>
-
         <p className="text-center text-custom-secondary mb-4">
           {studentData.university}
         </p>
@@ -131,7 +115,6 @@ export default function StudentProfileCard() {
             />
           </div>
         </div>
-
         <p className="text-center text-custom-secondary text-sm">
           {studentData.xp} / {studentData.maxXp} XP
         </p>
@@ -141,7 +124,6 @@ export default function StudentProfileCard() {
         <h3 className="text-2xl font-semibold text-custom-main mb-4">
           Открытые навыки
         </h3>
-
         <div className="flex flex-wrap justify-center gap-6 mb-6">
           {studentData.achievements.length > 0 ? (
             studentData.achievements.map((ach) => (
@@ -160,23 +142,25 @@ export default function StudentProfileCard() {
             </p>
           )}
         </div>
-
-        <button
-          onClick={() => router.push("/wiki")}
-          className="btn btn-primary w-3/4 md:w-1/2 rounded-button"
-        >
-          <Newspaper size={18} />
-          Ваши статьи
-        </button>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
+      <div className="mt-auto w-full flex flex-col items-center gap-3 pb-4">
+        <button
+          onClick={() => router.push("/wiki")}
+          className="btn btn-primary w-full md:w-3/4 rounded-button"
+        >
+          <Newspaper size={18} />
+          Читать Wiki
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary bg-transparent w-full md:w-3/4 rounded-button flex items-center justify-center gap-2 text-custom-main"
+        >
+          <LogOut size={18} />
+          Выйти
+        </button>
+      </div>
     </div>
   );
 }

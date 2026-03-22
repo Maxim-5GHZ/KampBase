@@ -1,1911 +1,3 @@
-File: ./backend/src/test/java/hack/main/ApplicationTests.java
-package hack.main;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-@SpringBootTest
-class ApplicationTests {
-
-	@Test
-	void contextLoads() {
-	}
-
-}
-
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/TreeOfSkills.java
-// hack/models/TreeOfSkills.java
-package hack.models;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import lombok.*;
-import java.util.HashMap;
-import java.util.Map;
-
-import java.util.HashSet;
-import java.util.Set;
-
-@Entity
-@Table(name = "tree_of_skills")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@Builder
-public class TreeOfSkills {
-
-    @Id
-    private Long userId;
-
-    @OneToOne
-    @MapsId
-    @JoinColumn(name = "user_id")
-    @JsonIgnore
-    private User user;
-
-    @Builder.Default
-    private Integer rate = 0;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_skills_data", joinColumns = @JoinColumn(name = "user_id"))
-    @MapKeyColumn(name = "skill_name")
-    @Column(name = "skill_value")
-    @Builder.Default
-    private Map<String, Integer> skills = new HashMap<>();
-
-    // ДОБАВЛЕНО: Список ID перков, которые открыл пользователь
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "user_unlocked_perks", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "perk_id")
-    @Builder.Default
-    private Set<String> unlockedPerks = new HashSet<>();
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/Perk.java
-// src/main/java/hack/models/Perk.java
-package hack.models;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class Perk {
-    private String id;
-    private String name;
-    private String shortName;
-    private String description;
-    private List<String> parentIds;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/User.java
-package hack.models;
-
-import jakarta.persistence.*;
-import lombok.*;
-import hack.enums.*;
-
-@Entity
-@Table(name = "users")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Рекомендуется автогенерация
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(unique = true, nullable = false)
-    private String username;
-
-    @Column(nullable = false)
-    private String password; // Здесь будет храниться BCrypt хеш
-
-    private String name;
-    private String lastName;
-
-    @Enumerated(EnumType.STRING)
-    private Role role;
-
-    private String company;
-
-    @Column(name = "photo_link")
-    private String photoLink;
-
-    @Column(name = "github_user_name")
-    private String githubUserName;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/Task.java
-// hack/models/Task.java
-package hack.models;
-
-import jakarta.persistence.*;
-import lombok.*;
-
-@Entity
-@Table(name = "tasks")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-public class Task {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "task_id")
-    private Long id;
-
-    private String title; 
-
-    @ManyToOne
-    @JoinColumn(name = "author_id")
-    private User author; 
-
-    @Column(name = "githublink")
-    private String githubLink;
-
-    private String about;
-
-    @Column(name = "is_active")
-    private Boolean isActive = true;
-
-    // ДОБАВЛЕНО: Какой навык прокачивает эта таска (например, "Python", "Java", "SQL")
-    @Column(name = "skill_name")
-    private String skillName;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/Article.java
-package hack.models;
-
-import hack.enums.*;
-import jakarta.persistence.*;
-import lombok.*;
-import java.util.Set;
-
-@Entity
-@Table(name = "articles")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-public class Article {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Предполагаемый article_id
-
-    private String title;
-    private String about;
-    private String author;
-
-    @Column(name = "author_id")
-    private Long authorId;
-
-    @Column(name = "star_count")
-    private Long starCount;
-
-    @Enumerated(EnumType.STRING)
-    private ArticleFormat format;
-
-    private String link;
-
-    @Column(name = "stringrole")
-    private String stringRole;
-
-    @Column(name = "preview_photo_link")
-    private String previewPhotoLink;
-
-    // Связь для articles_star_history
-    @ManyToMany
-    @JoinTable(
-            name = "articles_star_history",
-            joinColumns = @JoinColumn(name = "article_id"),
-            inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    private Set<User> starredBy;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/CompleteTask.java
-package hack.models;
-
-import hack.enums.SolutionStatus;
-import jakarta.persistence.*;
-import lombok.*;
-
-@Entity
-@Table(name = "complete_task")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-public class CompleteTask {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "solution_id")
-    private Long solutionId;
-
-    @ManyToOne
-    @JoinColumn(name = "task_id")
-    private Task task;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @Column(name = "commit_hash") // Заменили pullRequestLink на commitHash
-    private String commitHash;
-
-    @Enumerated(EnumType.STRING)
-    private SolutionStatus status = SolutionStatus.PENDING;
-    
-    private Integer receivedRating; // Сколько баллов получил студент за это решение
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/models/HrFavorite.java
-package hack.models;
-
-import jakarta.persistence.*;
-import lombok.*;
-
-@Entity
-@Table(
-    name = "hr_favorites",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"hr_id", "student_id"})
-)
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-public class HrFavorite {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "hr_id", nullable = false)
-    private User hr;
-
-    @ManyToOne
-    @JoinColumn(name = "student_id", nullable = false)
-    private User student;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/services/PerkManager.java
-// src/main/java/hack/services/PerkManager.java
-package hack.services;
-
-import hack.models.Perk;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Set;
-
-@Service
-public class PerkManager {
-
-    // Жестко заданное дерево навыков
-    public final List<Perk> PERKS = List.of(
-        new Perk("java-basics", "Основы Java", "J", "Открывает доступ к задачам по Java", List.of()),
-        new Perk("java-exp", "Java: Опыт", "JE", "Даёт +10% к опыту за выполнение задач по Java", List.of("java-basics")),
-        new Perk("java-rep", "Java: Репутация", "JR", "Даёт +10% к звёздам репутации", List.of("java-exp")),
-        
-        new Perk("python-basics", "Основы Python", "P", "Открывает доступ к задачам по Python", List.of()),
-        new Perk("python-exp", "Python: Опыт", "PE", "Даёт +10% к опыту за выполнение задач по Python", List.of("python-basics")),
-        new Perk("python-rep", "Python: Репутация", "PR", "Даёт +10% к звёздам репутации", List.of("python-exp")),
-        
-        new Perk("js-basics", "Основы JavaScript", "JS", "Открывает доступ к задачам по JavaScript", List.of()),
-        new Perk("js-exp", "JavaScript: Опыт", "JSE", "Даёт +10% к опыту за выполнение задач по JavaScript", List.of("js-basics")),
-        new Perk("js-rep", "JavaScript: Репутация", "JSR", "Даёт +10% к звёздам репутации", List.of("js-exp")),
-        
-        new Perk("sql-basics", "Основы SQL", "SQL", "Открывает доступ к задачам по SQL", List.of()),
-        new Perk("sql-exp", "SQL: Опыт", "SQLE", "Даёт +10% к опыту за выполнение задач по SQL", List.of("sql-basics")),
-        new Perk("sql-rep", "SQL: Репутация", "SQLR", "Даёт +10% к звёздам репутации", List.of("sql-exp")),
-        
-        new Perk("db-design", "Проектирование БД", "DBD", "Открывает доступ к задачам по проектированию баз данных", List.of("sql-basics")),
-        new Perk("db-master", "Мастер БД", "DBM", "Даёт +15% к опыту за задачи по проектированию БД", List.of("db-design"))
-    );
-
-    public Perk getPerkById(String id) {
-        return PERKS.stream().filter(p -> p.getId().equals(id)).findFirst().orElse(null);
-    }
-
-    // Механика 1: Какой перк нужен, чтобы вообще решать задачу?
-    public String getRequiredBasePerk(String taskSkillName) {
-        if (taskSkillName == null) return null;
-        return switch (taskSkillName.toLowerCase().trim()) {
-            case "java" -> "java-basics";
-            case "python" -> "python-basics";
-            case "javascript", "js" -> "js-basics";
-            case "sql" -> "sql-basics";
-            case "db design", "проектирование бд" -> "db-design";
-            default -> null; // Для неизвестных навыков ограничений нет
-        };
-    }
-
-    // Механика 2: Расчет бонуса к опыту
-    public double getExpMultiplier(String taskSkillName, Set<String> unlockedPerks) {
-        if (taskSkillName == null) return 1.0;
-        double multiplier = 1.0;
-        String skill = taskSkillName.toLowerCase().trim();
-
-        if (skill.equals("java") && unlockedPerks.contains("java-exp")) multiplier += 0.10;
-        if (skill.equals("python") && unlockedPerks.contains("python-exp")) multiplier += 0.10;
-        if ((skill.equals("javascript") || skill.equals("js")) && unlockedPerks.contains("js-exp")) multiplier += 0.10;
-        if (skill.equals("sql") && unlockedPerks.contains("sql-exp")) multiplier += 0.10;
-        if ((skill.equals("db design") || skill.equals("проектирование бд")) && unlockedPerks.contains("db-master")) multiplier += 0.15;
-
-        return multiplier;
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/services/FileStorageService.java
-// hack/services/FileStorageService.java
-package hack.services;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
-
-import jakarta.annotation.PostConstruct;
-import java.io.IOException;
-import java.nio.file.*;
-import java.util.UUID;
-
-@Service
-public class FileStorageService {
-
-    @Value("${file.upload-dir:uploads}")
-    private String uploadDir;
-
-    private Path fileStorageLocation;
-
-    @PostConstruct
-    public void init() {
-        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(this.fileStorageLocation);
-        } catch (Exception ex) {
-            throw new RuntimeException("Не удалось создать директорию для загрузки файлов.", ex);
-        }
-    }
-
-    public String storeFile(MultipartFile file) {
-        String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
-        
-        try {
-            if (originalFileName.contains("..")) {
-                throw new RuntimeException("Недопустимый путь файла " + originalFileName);
-            }
-
-            // Генерируем уникальное имя файла
-            String extension = "";
-            int i = originalFileName.lastIndexOf('.');
-            if (i > 0) {
-                extension = originalFileName.substring(i);
-            }
-            String newFileName = UUID.randomUUID().toString() + extension;
-
-            // Сохраняем файл
-            Path targetLocation = this.fileStorageLocation.resolve(newFileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-
-            // Генерируем URL для доступа к файлу
-            return ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/uploads/")
-                    .path(newFileName)
-                    .toUriString();
-
-        } catch (IOException ex) {
-            throw new RuntimeException("Не удалось сохранить файл " + originalFileName, ex);
-        }
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/repositories/HrFavoriteRepository.java
-// src/main/java/hack/repositories/HrFavoriteRepository.java
-package hack.repositories;
-
-import hack.models.HrFavorite;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
-
-@Repository
-public interface HrFavoriteRepository extends JpaRepository<HrFavorite, Long> {
-    List<HrFavorite> findByHrUserId(Long hrId);
-    Optional<HrFavorite> findByHrUserIdAndStudentUserId(Long hrId, Long studentId);
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/repositories/TreeOfSkillsRepository.java
-package hack.repositories;
-
-import hack.models.TreeOfSkills;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface TreeOfSkillsRepository extends JpaRepository<TreeOfSkills, Long> {
-    // Вся сложная логика маппинга перенесена в HrController (Streams)
-    // чтобы избежать крашей Hibernate при работе с коллекциями Map.
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/repositories/UserRepository.java
-package hack.repositories;
-
-import hack.models.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.Optional;
-
-public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
-}
-
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/repositories/CompleteTaskRepository.java
-// src/main/java/hack/repositories/CompleteTaskRepository.java
-package hack.repositories;
-
-import hack.models.CompleteTask;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-@Repository
-public interface CompleteTaskRepository extends JpaRepository<CompleteTask, Long> {
-    List<CompleteTask> findByTaskAuthorUserIdAndStatus(Long mentorId, hack.enums.SolutionStatus status);
-    
-    // ДОБАВЛЕНО: поиск всех решений для конкретной задачи
-    List<CompleteTask> findByTaskId(Long taskId);
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/repositories/TaskRepository.java
-package hack.repositories;
-
-import hack.models.Task;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-@Repository
-public interface TaskRepository extends JpaRepository<Task, Long> {
-    List<Task> findByIsActiveTrue();
-    List<Task> findByAuthorUserId(Long authorId);
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/repositories/ArticleRepository.java
-package hack.repositories;
-
-import hack.models.*;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-import java.util.List;
-
-
-@Repository
-public interface ArticleRepository extends JpaRepository<Article, Long> {
-    List<Article> findByTitleContainingIgnoreCase(String title);
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/controllers/TaskController.java
-// hack/controllers/TaskController.java
-package hack.controllers;
-
-import hack.enums.Role;
-import hack.enums.SolutionStatus;
-import hack.models.CompleteTask;
-import hack.models.Task;
-import hack.models.TreeOfSkills;
-import hack.models.User;
-import hack.payload.ReviewSolutionRequest;
-import hack.payload.SubmitSolutionRequest;
-import hack.payload.TaskRequest;
-import hack.repositories.CompleteTaskRepository;
-import hack.repositories.TaskRepository;
-import hack.repositories.TreeOfSkillsRepository;
-import hack.repositories.UserRepository;
-import hack.security.UserDetailsImpl;
-import hack.services.PerkManager;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-@RestController
-@RequestMapping("/api/tasks")
-public class TaskController {
-
-    private final TaskRepository taskRepository;
-    private final CompleteTaskRepository completeTaskRepository;
-    private final UserRepository userRepository;
-    private final TreeOfSkillsRepository treeOfSkillsRepository;
-    private final PerkManager perkManager;
-
-    public TaskController(TaskRepository taskRepository, 
-                          CompleteTaskRepository completeTaskRepository, 
-                          UserRepository userRepository,
-                          TreeOfSkillsRepository treeOfSkillsRepository,
-                          PerkManager perkManager) {
-        this.taskRepository = taskRepository;
-        this.completeTaskRepository = completeTaskRepository;
-        this.userRepository = userRepository;
-        this.treeOfSkillsRepository = treeOfSkillsRepository;
-        this.perkManager = perkManager;
-    }
-
-    @PostMapping
-    public ResponseEntity<?> createTask(@RequestBody TaskRequest request, 
-                                        @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        User user = userRepository.findById(userDetails.id()).orElseThrow();
-        if (user.getRole() != Role.MENTOR) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("message", "Только ментор может создавать таски"));
-        }
-
-        Task task = new Task();
-        task.setTitle(request.getTitle());
-        task.setAbout(request.getAbout());
-        task.setGithubLink(request.getGithubLink());
-        task.setSkillName(request.getSkillName()); 
-        task.setAuthor(user);
-        task.setIsActive(true);
-
-        return ResponseEntity.ok(taskRepository.save(task));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Task>> getAllActiveTasks() {
-        return ResponseEntity.ok(taskRepository.findAll());
-    }
-
-    @PostMapping("/{taskId}/submit")
-    public ResponseEntity<?> submitSolution(@PathVariable Long taskId, 
-                                            @RequestBody SubmitSolutionRequest request,
-                                            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        User student = userRepository.findById(userDetails.id()).orElseThrow();
-        if (student.getRole() != Role.STUDENT) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("message", "Только студент может отправлять решения"));
-        }
-
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Таска не найдена"));
-
-        // МЕХАНИКА 1: Проверка наличия базового перка
-        String requiredPerk = perkManager.getRequiredBasePerk(task.getSkillName());
-        if (requiredPerk != null) {
-            TreeOfSkills tree = treeOfSkillsRepository.findById(student.getUserId()).orElse(null);
-            if (tree == null || tree.getUnlockedPerks() == null || !tree.getUnlockedPerks().contains(requiredPerk)) {
-                return ResponseEntity.badRequest().body(Map.of(
-                    "message", "У вас не открыт базовый навык для этой задачи! Требуется открыть перк: " + requiredPerk
-                ));
-            }
-        }
-
-        CompleteTask solution = new CompleteTask();
-        solution.setTask(task);
-        solution.setUser(student);
-        solution.setCommitHash(request.getCommitHash());
-        solution.setStatus(SolutionStatus.PENDING);
-
-        return ResponseEntity.ok(completeTaskRepository.save(solution));
-    }
-
-   @Transactional
-    @PostMapping("/solutions/{solutionId}/review")
-    public ResponseEntity<?> reviewSolution(@PathVariable Long solutionId, 
-                                            @RequestBody ReviewSolutionRequest request,
-                                            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        User mentor = userRepository.findById(userDetails.id()).orElseThrow();
-        if (mentor.getRole() != Role.MENTOR) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("message", "Только ментор может проверять решения"));
-        }
-
-        CompleteTask solution = completeTaskRepository.findById(solutionId)
-                .orElseThrow(() -> new RuntimeException("Решение не найдено"));
-
-        if (solution.getStatus() != SolutionStatus.PENDING) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Решение уже проверено"));
-        }
-
-        if (request.isApproved()) {
-            solution.setStatus(SolutionStatus.APPROVED);
-
-            TreeOfSkills tree = treeOfSkillsRepository.findById(solution.getUser().getUserId()).orElseThrow();
-            String targetSkill = solution.getTask().getSkillName();
-
-            // МЕХАНИКА 2: Применяем бонусный множитель за прокачанные перки
-            double multiplier = perkManager.getExpMultiplier(targetSkill, tree.getUnlockedPerks());
-            int finalRating = (int) Math.round(request.getRating() * multiplier);
-
-            solution.setReceivedRating(finalRating); // Сохраняем финальный (увеличенный) рейтинг
-            
-            // 1. Увеличиваем общий рейтинг
-            tree.setRate(tree.getRate() + finalRating);
-
-            // 2. Распределяем по веткам
-            if (targetSkill != null && !targetSkill.trim().isEmpty()) {
-                Map<String, Integer> currentSkills = tree.getSkills();
-                if (currentSkills == null) currentSkills = new HashMap<>();
-                
-                int currentSkillPoints = currentSkills.getOrDefault(targetSkill, 0);
-                currentSkills.put(targetSkill, currentSkillPoints + finalRating);
-                
-                tree.setSkills(new HashMap<>(currentSkills));
-            }
-
-            treeOfSkillsRepository.save(tree);
-        } else {
-            solution.setStatus(SolutionStatus.REJECTED);
-            solution.setReceivedRating(0);
-        }
-
-        return ResponseEntity.ok(completeTaskRepository.save(solution));
-    }
-
-    @GetMapping("/skills/my")
-    public ResponseEntity<?> getMySkills(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        
-        TreeOfSkills tree = treeOfSkillsRepository.findById(userDetails.id())
-                .orElseGet(() -> {
-                    TreeOfSkills emptyTree = new TreeOfSkills();
-                    emptyTree.setUserId(userDetails.id());
-                    emptyTree.setRate(0);
-                    emptyTree.setSkills(new HashMap<>());
-                    return emptyTree;
-                });
-        return ResponseEntity.ok(tree);
-    }
-    @GetMapping("/{taskId}/solutions")
-public ResponseEntity<?> getSolutionsByTask(@PathVariable Long taskId, 
-                                            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-    if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-    // Можно добавить проверку, что это запрашивает именно автор задачи (ментор)
-    List<CompleteTask> solutions = completeTaskRepository.findByTaskId(taskId);
-    return ResponseEntity.ok(solutions);
-}
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/controllers/FileController.java
-// hack/controllers/FileController.java
-package hack.controllers;
-
-import hack.security.UserDetailsImpl;
-import hack.services.FileStorageService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Map;
-
-@RestController
-@RequestMapping("/api/files")
-public class FileController {
-
-    private final FileStorageService fileStorageService;
-
-    public FileController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
-    }
-
-    @PostMapping("/upload")
-    public ResponseEntity<?> uploadFile(@RequestParam("file") MultipartFile file,
-                                        @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        // Проверяем, что пользователь авторизован
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Необходима авторизация"));
-        }
-
-        try {
-            String fileUrl = fileStorageService.storeFile(file);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Файл успешно загружен",
-                    "url", fileUrl
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Ошибка загрузки файла: " + e.getMessage()));
-        }
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/controllers/SkillController.java
-// src/main/java/hack/controllers/SkillController.java
-package hack.controllers;
-
-import hack.models.Perk;
-import hack.models.TreeOfSkills;
-import hack.payload.PerkDTO;
-import hack.repositories.TreeOfSkillsRepository;
-import hack.security.UserDetailsImpl;
-import hack.services.PerkManager;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-@RestController
-@RequestMapping("/api/skills")
-public class SkillController {
-
-    private final TreeOfSkillsRepository treeRepository;
-    private final PerkManager perkManager;
-
-    public SkillController(TreeOfSkillsRepository treeRepository, PerkManager perkManager) {
-        this.treeRepository = treeRepository;
-        this.perkManager = perkManager;
-    }
-
-    // Получить всё дерево навыков с отметками "открыто/закрыто"
-    @GetMapping("/perks")
-    public ResponseEntity<?> getAllPerks(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        TreeOfSkills tree = treeRepository.findById(userDetails.id()).orElse(null);
-        Set<String> unlocked = (tree != null && tree.getUnlockedPerks() != null) ? tree.getUnlockedPerks() : Set.of();
-
-        List<PerkDTO> response = perkManager.PERKS.stream()
-                .map(perk -> PerkDTO.fromPerk(perk, unlocked.contains(perk.getId())))
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
-    }
-
-    // Прокачать (открыть) перк
-    @PostMapping("/perks/{perkId}/unlock")
-    public ResponseEntity<?> unlockPerk(@PathVariable String perkId, 
-                                        @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        Perk perk = perkManager.getPerkById(perkId);
-        if (perk == null) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Перк не найден"));
-        }
-
-        TreeOfSkills tree = treeRepository.findById(userDetails.id())
-                .orElseThrow(() -> new RuntimeException("Дерево навыков не найдено"));
-
-        Set<String> unlocked = tree.getUnlockedPerks();
-
-        // Проверка: уже открыт?
-        if (unlocked.contains(perkId)) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Этот навык уже открыт"));
-        }
-
-        // Проверка зависимостей (родителей)
-        for (String parentId : perk.getParentIds()) {
-            if (!unlocked.contains(parentId)) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "message", "Сначала необходимо открыть родительский навык: " + parentId
-                ));
-            }
-        }
-
-        // Открываем навык!
-        unlocked.add(perkId);
-        treeRepository.save(tree);
-
-        return ResponseEntity.ok(Map.of("message", "Навык '" + perk.getName() + "' успешно открыт!"));
-    }
-
-    // ДОБАВЛЕНО: Получить статистику (опыт, навыки, перки) любого пользователя по ID
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getUserSkills(@PathVariable Long userId, 
-                                           @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        TreeOfSkills tree = treeRepository.findById(userId)
-                .orElseGet(() -> {
-                    // Если дерева вдруг нет, возвращаем пустое, чтобы фронт не падал с 404
-                    TreeOfSkills emptyTree = new TreeOfSkills();
-                    emptyTree.setUserId(userId);
-                    emptyTree.setRate(0);
-                    emptyTree.setSkills(new HashMap<>());
-                    emptyTree.setUnlockedPerks(new HashSet<>());
-                    return emptyTree;
-                });
-
-        return ResponseEntity.ok(tree);
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/controllers/AuthController.java
-// src/main/java/hack/controllers/AuthController.java
-package hack.controllers;
-
-import hack.enums.Role;
-import hack.models.*;
-import hack.payload.*;
-import hack.repositories.*;
-import hack.security.JwtUtils;
-import hack.security.UserDetailsImpl;
-import org.springframework.http.*;
-import org.springframework.security.authentication.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-@RestController
-@RequestMapping("/api/auth")
-public class AuthController {
-    private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final TreeOfSkillsRepository treeOfSkillsRepository;
-    private final PasswordEncoder encoder;
-    private final JwtUtils jwtUtils;
-
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
-                          TreeOfSkillsRepository treeOfSkillsRepository,
-                          PasswordEncoder encoder, JwtUtils jwtUtils) {
-        this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.treeOfSkillsRepository = treeOfSkillsRepository;
-        this.encoder = encoder;
-        this.jwtUtils = jwtUtils;
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtUtils.generateJwtToken(authentication.getName());
-
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
-                    .collect(Collectors.toList());
-
-            // ДОБАВЛЕНО: Достаем пользователя из БД для получения имени и фамилии
-            User user = userRepository.findById(userDetails.id())
-                    .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-
-            return ResponseEntity.ok(new JwtResponse(
-                    jwt, 
-                    userDetails.id(), 
-                    userDetails.getUsername(), 
-                    user.getName(), 
-                    user.getLastName(), 
-                    roles
-            ));
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Ошибка: Неверный логин или пароль");
-        }
-    }
-
-    @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody SignUpRequest signUpRequest) {
-        if (userRepository.findByUsername(signUpRequest.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("Ошибка: Пользователь уже существует!");
-        }
-
-        // Создаем пользователя
-        User user = new User();
-        user.setUsername(signUpRequest.getUsername());
-        user.setPassword(encoder.encode(signUpRequest.getPassword()));
-        user.setName(signUpRequest.getName());
-        user.setLastName(signUpRequest.getLastName());
-        user.setRole(signUpRequest.getRole() != null ? signUpRequest.getRole() : Role.STUDENT);
-
-        User savedUser = userRepository.save(user);
-
-        // Сразу создаем ему пустое дерево скиллов
-        TreeOfSkills tree = TreeOfSkills.builder()
-                .user(savedUser)
-                .rate(0)
-                .skills(new HashMap<>())
-                .build();
-        treeOfSkillsRepository.save(tree);
-
-        return ResponseEntity.ok("Пользователь успешно зарегистрирован!");
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/controllers/ArticleController.java
-package hack.controllers;
-
-import hack.models.Article;
-import hack.models.User;
-import hack.payload.ArticleRequest;
-import hack.repositories.ArticleRepository;
-import hack.repositories.UserRepository;
-import hack.security.UserDetailsImpl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
-
-@RestController
-@RequestMapping("/api/articles")
-public class ArticleController {
-
-    private final ArticleRepository articleRepository;
-    private final UserRepository userRepository;
-
-    public ArticleController(ArticleRepository articleRepository, UserRepository userRepository) {
-        this.articleRepository = articleRepository;
-        this.userRepository = userRepository;
-    }
-
-    // ИСПРАВЛЕНИЕ: Убрали {"", "/"}, теперь Spring Boot 3 точно всё схавает корректно
-    @GetMapping
-    public ResponseEntity<List<Article>> getAllArticles() {
-        return ResponseEntity.ok(articleRepository.findAll());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getArticleById(@PathVariable Long id) {
-        Optional<Article> articleOpt = articleRepository.findById(id);
-        if (articleOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Статья не найдена"));
-        }
-        return ResponseEntity.ok(articleOpt.get());
-    }
-    // Добавление статьи
-    @PostMapping
-public ResponseEntity<?> createArticle(@RequestBody ArticleRequest request, 
-                                       @AuthenticationPrincipal UserDetailsImpl userDetails) {
-    if (userDetails == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-    User user = userRepository.findById(userDetails.id()).orElseThrow();
-
-    Article article = new Article();
-    article.setTitle(request.getTitle());
-    article.setAbout(request.getAbout());
-    article.setFormat(request.getFormat());
-    
-    // В поле link теперь придет URL вида http://localhost:8080/uploads/abc-123.md
-    article.setLink(request.getLink());
-    article.setPreviewPhotoLink(request.getPreviewPhotoLink());
-    
-    article.setAuthorId(user.getUserId());
-    article.setAuthor(user.getUsername());
-    article.setStringRole(user.getRole().name());
-    article.setStarCount(0L);
-
-    return ResponseEntity.ok(articleRepository.save(article));
-}
-
-    // Редактирование статьи
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateArticle(@PathVariable Long id, 
-                                           @RequestBody ArticleRequest request, 
-                                           @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Необходима авторизация"));
-        }
-
-        Optional<Article> articleOpt = articleRepository.findById(id);
-        if (articleOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Статья не найдена"));
-        }
-
-        Article article = articleOpt.get();
-
-        // Проверка прав: редактировать может только автор
-        if (!article.getAuthorId().equals(userDetails.id())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "У вас нет прав на редактирование этой статьи"));
-        }
-
-        // Обновляем поля
-        article.setTitle(request.getTitle());
-        article.setAbout(request.getAbout());
-        article.setFormat(request.getFormat());
-        article.setLink(request.getLink());
-        article.setPreviewPhotoLink(request.getPreviewPhotoLink());
-
-        Article updatedArticle = articleRepository.save(article);
-        return ResponseEntity.ok(updatedArticle);
-    }
-
-    // Удаление статьи
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteArticle(@PathVariable Long id, 
-                                           @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (userDetails == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Необходима авторизация"));
-        }
-
-        Optional<Article> articleOpt = articleRepository.findById(id);
-        if (articleOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Статья не найдена"));
-        }
-
-        Article article = articleOpt.get();
-
-        // Проверка прав: удалить может только автор
-        if (!article.getAuthorId().equals(userDetails.id())) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "У вас нет прав на удаление этой статьи"));
-        }
-
-        articleRepository.delete(article);
-        return ResponseEntity.ok(Map.of("message", "Статья успешно удалена"));
-    }
-
-    // Поиск статей по названию
-    @GetMapping("/search")
-    public ResponseEntity<?> searchArticles(@RequestParam String title) {
-        List<Article> articles = articleRepository.findByTitleContainingIgnoreCase(title);
-        return ResponseEntity.ok(articles);
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/controllers/HrController.java
-// src/main/java/hack/controllers/HrController.java
-package hack.controllers;
-
-import hack.enums.Role;
-import hack.models.HrFavorite;
-import hack.models.TreeOfSkills;
-import hack.models.User;
-import hack.payload.LeaderboardResponse;
-import hack.payload.UserShortInfoResponse;
-import hack.repositories.HrFavoriteRepository;
-import hack.repositories.TreeOfSkillsRepository;
-import hack.repositories.UserRepository;
-import hack.security.UserDetailsImpl;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-@RestController
-@RequestMapping("/api/hr")
-public class HrController {
-
-    private final UserRepository userRepository;
-    private final TreeOfSkillsRepository treeOfSkillsRepository;
-    private final HrFavoriteRepository hrFavoriteRepository;
-
-    public HrController(UserRepository userRepository, 
-                        TreeOfSkillsRepository treeOfSkillsRepository, 
-                        HrFavoriteRepository hrFavoriteRepository) {
-        this.userRepository = userRepository;
-        this.treeOfSkillsRepository = treeOfSkillsRepository;
-        this.hrFavoriteRepository = hrFavoriteRepository;
-    }
-
-    // ИСПРАВЛЕНИЕ: Тотально переписан на Java Streams для железобетонной работы
-    @GetMapping("/leaderboard")
-    public ResponseEntity<?> getLeaderboard(@RequestParam(required = false) String skill) {
-        List<TreeOfSkills> allTrees = treeOfSkillsRepository.findAll();
-        List<TreeOfSkills> filteredTrees;
-
-        // ИСПРАВЛЕНИЕ: Оставляем только студентов
-        List<TreeOfSkills> studentTrees = allTrees.stream()
-                .filter(t -> t.getUser() != null && t.getUser().getRole() == Role.STUDENT)
-                .collect(Collectors.toList());
-
-        if (skill != null && !skill.trim().isEmpty()) {
-            filteredTrees = studentTrees.stream()
-                    .filter(t -> t.getSkills() != null && t.getSkills().containsKey(skill))
-                    .sorted((t1, t2) -> t2.getSkills().get(skill).compareTo(t1.getSkills().get(skill)))
-                    .collect(Collectors.toList());
-        } else {
-            filteredTrees = studentTrees.stream()
-                    .sorted((t1, t2) -> Integer.compare(
-                            t2.getRate() != null ? t2.getRate() : 0, 
-                            t1.getRate() != null ? t1.getRate() : 0))
-                    .collect(Collectors.toList());
-        }
-
-        List<LeaderboardResponse> response = filteredTrees.stream().map(tree -> {
-            Integer skillPoints = null;
-            if (skill != null && !skill.trim().isEmpty() && tree.getSkills() != null) {
-                skillPoints = tree.getSkills().getOrDefault(skill, 0);
-            }
-            
-            return new LeaderboardResponse(
-                    tree.getUser().getUserId(),
-                    tree.getUser().getUsername(),
-                    tree.getUser().getName(),
-                    tree.getUser().getLastName(),
-                    tree.getRate() != null ? tree.getRate() : 0,
-                    skillPoints
-            );
-        }).collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/favorites/{studentId}")
-    public ResponseEntity<?> addFavorite(@PathVariable Long studentId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (!isRole(userDetails, Role.HR)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Доступ только для HR"));
-        }
-
-        User hr = userRepository.findById(userDetails.id()).orElseThrow();
-        User student = userRepository.findById(studentId).orElse(null);
-
-        if (student == null || student.getRole() != Role.STUDENT) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Студент не найден"));
-        }
-
-        if (hrFavoriteRepository.findByHrUserIdAndStudentUserId(hr.getUserId(), student.getUserId()).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Студент уже в избранном"));
-        }
-
-        HrFavorite favorite = new HrFavorite();
-        favorite.setHr(hr);
-        favorite.setStudent(student);
-        hrFavoriteRepository.save(favorite);
-
-        return ResponseEntity.ok(Map.of("message", "Студент добавлен в избранное"));
-    }
-
-    @DeleteMapping("/favorites/{studentId}")
-    public ResponseEntity<?> removeFavorite(@PathVariable Long studentId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (!isRole(userDetails, Role.HR)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Доступ только для HR"));
-        }
-
-        Optional<HrFavorite> favorite = hrFavoriteRepository.findByHrUserIdAndStudentUserId(userDetails.id(), studentId);
-        if (favorite.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "Студент не найден в избранном"));
-        }
-
-        hrFavoriteRepository.delete(favorite.get());
-        return ResponseEntity.ok(Map.of("message", "Студент удален из избранного"));
-    }
-
-    @GetMapping("/favorites")
-    public ResponseEntity<?> getFavorites(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        if (!isRole(userDetails, Role.HR)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Доступ только для HR"));
-        }
-
-        List<HrFavorite> favorites = hrFavoriteRepository.findByHrUserId(userDetails.id());
-        List<UserShortInfoResponse> response = favorites.stream()
-                .map(fav -> UserShortInfoResponse.fromUser(fav.getStudent()))
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
-    }
-
-    private boolean isRole(UserDetailsImpl userDetails, Role role) {
-        if (userDetails == null) return false;
-        User user = userRepository.findById(userDetails.id()).orElse(null);
-        return user != null && user.getRole() == role;
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/enums/ArticleFormat.java
-package hack.enums;
-
-public enum ArticleFormat {
-    MD, PDF
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/enums/Role.java
-package hack.enums;
-
-public enum Role {
-    MENTOR, HR, STUDENT
-}
-
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/enums/SolutionStatus.java
-package hack.enums;
-
-public enum SolutionStatus {
-    PENDING,
-    APPROVED,
-    REJECTED
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/Application.java
-package hack;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-
-@SpringBootApplication
- // Укажите пакет, где находятся ваши сущности
-public class Application {
-
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
-
-}
-
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/ArticleRequest.java
-package hack.payload;
-
-import hack.enums.ArticleFormat;
-import lombok.Data;
-
-@Data
-public class ArticleRequest {
-    private String title;
-    private String about;
-    private ArticleFormat format;
-    private String link;
-    private String previewPhotoLink;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/SubmitSolutionRequest.java
-package hack.payload;
-
-import lombok.Data;
-
-@Data
-public class SubmitSolutionRequest {
-    private String commitHash;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/TaskRequest.java
-// hack/payload/TaskRequest.java
-package hack.payload;
-
-import lombok.Data;
-
-@Data
-public class TaskRequest {
-    private String title;
-    private String about;
-    private String githubLink;
-    private String skillName; // ДОБАВЛЕНО
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/LoginRequest.java
-package hack.payload;
-
-import lombok.*;
-
-@Getter @Setter
-public class LoginRequest {
-    private String username;
-    private String password;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/JwtResponse.java
-// src/main/java/hack/payload/JwtResponse.java
-package hack.payload;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import java.util.List;
-
-@Getter @Setter
-@AllArgsConstructor
-public class JwtResponse {
-    private String token;
-    private Long id;
-    private String username;
-    private String name;       // ДОБАВЛЕНО
-    private String lastName;   // ДОБАВЛЕНО
-    private List<String> roles;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/ReviewSolutionRequest.java
-// hack/payload/ReviewSolutionRequest.java
-package hack.payload;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
-@Data
-public class ReviewSolutionRequest {
-    
-    // ИСПРАВЛЕНИЕ: Заставляем Spring понимать поле "isApproved" из JSON
-    @JsonProperty("isApproved")
-    private boolean isApproved;
-    
-    private Integer rating;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/LeaderboardResponse.java
-package hack.payload;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-@Data
-@AllArgsConstructor
-public class LeaderboardResponse {
-    private Long userId;
-    private String username;
-    private String name;
-    private String lastName;
-    private Integer totalRate;
-    private Integer skillPoints; 
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/UserShortInfoResponse.java
-package hack.payload;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import hack.models.User;
-
-@Data
-@AllArgsConstructor
-public class UserShortInfoResponse {
-    private Long userId;
-    private String username;
-    private String name;
-    private String lastName;
-
-    public static UserShortInfoResponse fromUser(User user) {
-        return new UserShortInfoResponse(
-            user.getUserId(), 
-            user.getUsername(), 
-            user.getName(), 
-            user.getLastName()
-        );
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/SignUpRequest.java
-package hack.payload;
-
-import hack.enums.Role;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter @Setter
-public class SignUpRequest {
-    private String username;
-    private String password;
-    private String name;
-    private String lastName;
-    private Role role;
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/payload/PerkDTO.java
-// src/main/java/hack/payload/PerkDTO.java
-package hack.payload;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import hack.models.Perk;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
-import java.util.List;
-
-@Data
-@AllArgsConstructor
-public class PerkDTO {
-    private String id;
-    private String name;
-    
-    @JsonProperty("short")
-    private String shortName;
-    
-    private String description;
-    
-    @JsonProperty("isOpen")
-    private boolean isOpen;
-    
-    private List<String> parentIds;
-
-    public static PerkDTO fromPerk(Perk perk, boolean isOpen) {
-        return new PerkDTO(
-                perk.getId(),
-                perk.getName(),
-                perk.getShortName(),
-                perk.getDescription(),
-                isOpen,
-                perk.getParentIds()
-        );
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/config/WebMvcConfig.java
-// hack/config/WebMvcConfig.java
-package hack.config;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-@Configuration
-public class WebMvcConfig implements WebMvcConfigurer {
-
-    @Value("${file.upload-dir:uploads}")
-    private String uploadDir;
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Получаем абсолютный путь к папке загрузок
-        Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        String uploadAbsolutePath = uploadPath.toString();
-
-        // Все запросы на /uploads/** будут искать файлы в этой папке
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + uploadAbsolutePath + "/");
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/security/UserDetailsImpl.java
-package hack.security;
-
-
-import hack.models.User;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import java.util.Collection;
-import java.util.List;
-
-public record UserDetailsImpl(Long id, String username, String password,
-                              Collection<? extends GrantedAuthority> authorities) implements UserDetails {
-
-    public static UserDetailsImpl build(User user) {
-        List<GrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
-        );
-        return new UserDetailsImpl(user.getUserId(), user.getUsername(), user.getPassword(), authorities);
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return authorities;
-    }
-
-    @Override
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public String getUsername() {
-        return username;
-    }
-
-    @Override public boolean isAccountNonExpired() { return true; }
-    @Override public boolean isAccountNonLocked() { return true; }
-    @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled() { return true; }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/security/WebSecurityConfig.java
-// hack/security/WebSecurityConfig.java
-package hack.security;
-
-import org.springframework.context.annotation.*;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
-
-@Configuration
-public class WebSecurityConfig {
-
-    private final UserDetailsServiceImpl userDetailsService;
-    private final JwtUtils jwtUtils;
-    private final AuthEntryPointJwt unauthorizedHandler;
-
-    public WebSecurityConfig(UserDetailsServiceImpl userDetailsService, JwtUtils jwtUtils, AuthEntryPointJwt unauthorizedHandler) {
-        this.userDetailsService = userDetailsService;
-        this.jwtUtils = jwtUtils;
-        this.unauthorizedHandler = unauthorizedHandler;
-    }
-
-    @Bean
-    public AuthTokenFilter authenticationJwtTokenFilter() {
-        return new AuthTokenFilter(jwtUtils, userDetailsService);
-    }
-
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults()) // ИСПРАВЛЕНИЕ: Включаем CORS правильно!
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
-            )
-            .formLogin(form -> form.disable())
-            .httpBasic(basic -> basic.disable());
-
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
-
-    // ИСПРАВЛЕНИЕ: Настройки CORS, разрешающие ВСЁ (чтобы не было 405 Method Not Allowed)
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*")); 
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/security/UserDetailsServiceImpl.java
-// hack/security/UserDetailsServiceImpl.java
-package hack.security;
-
-import hack.models.User;
-import hack.repositories.UserRepository;
-import org.springframework.security.core.userdetails.*;
-import org.springframework.stereotype.Service;
-
-@Service
-public class UserDetailsServiceImpl implements UserDetailsService {
-    private final UserRepository userRepository;
-
-    public UserDetailsServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
-        return UserDetailsImpl.build(user);
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/security/JwtUtils.java
-package hack.security;
-
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.util.Date;
-
-@Component
-public class JwtUtils {
-    private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
-
-    // Берем значения из application.properties
-    @Value("${hack.app.jwtSecret:yourSecureSecretKeyMustBeLongEnoughForHS256Algorithm}")
-    private String jwtSecret;
-
-    @Value("${hack.app.jwtExpirationMs:86400000}")
-    private int jwtExpirationMs;
-
-    private Key key() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public String generateJwtToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .signWith(key(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    public String getUserNameFromJwtToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
-
-    public boolean validateJwtToken(String authToken) {
-        try {
-            Jwts.parserBuilder().setSigningKey(key()).build().parseClaimsJws(authToken);
-            return true;
-        } catch (MalformedJwtException e) {
-            logger.error("Некорректный JWT токен: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            logger.error("Время действия JWT токена истекло: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            logger.error("JWT токен не поддерживается: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            logger.error("Пустая строка JWT: {}", e.getMessage());
-        } catch (SignatureException e) {
-            logger.error("Неверная цифровая подпись: {}", e.getMessage());
-        }
-        return false;
-    }
-}
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/security/AuthEntryPointJwt.java
-package hack.security;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-
-@Component
-public class AuthEntryPointJwt implements AuthenticationEntryPoint {
-
-    private static final Logger logger = LoggerFactory.getLogger(AuthEntryPointJwt.class);
-
-    @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
-            throws IOException, ServletException {
-        logger.error("Unauthorized error: {}", authException.getMessage());
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error: Unauthorized");
-    }
-}
-
-
-============================================================
-
-
-File: ./backend/src/main/java/hack/security/AuthTokenFilter.java
-package hack.security;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
-public class AuthTokenFilter extends OncePerRequestFilter {
-
-    private static final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
-
-    private final JwtUtils jwtUtils;
-    private final UserDetailsServiceImpl userDetailsService;
-
-    public AuthTokenFilter(JwtUtils jwtUtils, UserDetailsServiceImpl userDetailsService) {
-        this.jwtUtils = jwtUtils;
-        this.userDetailsService = userDetailsService;
-    }
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        try {
-            String jwt = parseJwt(request);
-            if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-                String username = jwtUtils.getUserNameFromJwtToken(jwt);
-
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
-        } catch (Exception e) {
-            // ИСПРАВЛЕНИЕ: Теперь мы видим, почему юзер не авторизовался!
-            logger.error("Cannot set user authentication: {}", e.getMessage());
-        }
-
-        filterChain.doFilter(request, response);
-    }
-
-    private String parseJwt(HttpServletRequest request) {
-        String headerAuth = request.getHeader("Authorization");
-
-        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-            return headerAuth.substring(7);
-        }
-
-        return null;
-    }
-}
-
-============================================================
-
-
 File: ./frontend/app/utils/task-service.ts
 import axios, { AxiosInstance } from "axios";
 import { authService } from "./auth-service";
@@ -1989,10 +81,7 @@ export const taskService = new TaskService();
 
 
 File: ./frontend/app/utils/article-service.ts
-// File: ./frontend/app/utils/article-service.ts
-import { ArticleRequest, Article, ArticleFormat } from "./types";
-import { authService } from "./auth-service";
-
+// frontend/app/utils/article-service.ts
 import { ArticleRequest, Article, ArticleFormat } from "./types";
 import { authService } from "./auth-service";
 
@@ -2695,6 +784,34 @@ function Header() {
 ============================================================
 
 
+File: ./frontend/app/wiki/wiki.module.css
+@media (min-width: 640px) {
+    .logoLink .desktopText {
+        position: relative;
+        display: inline-block;
+        overflow: hidden;
+    }
+}
+
+.logoLink .desktopText::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.logoLink:hover .desktopText::after {
+    left: 100%;
+}
+
+============================================================
+
+
 File: ./frontend/app/wiki/card.tsx
 "use client";
 
@@ -3365,313 +1482,403 @@ export default function NotFound() {
 
 
 File: ./frontend/app/registration/page.tsx
+// frontend/app/registration/page.tsx
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-    User,
-    Mail,
-    Lock,
-    Eye,
-    EyeOff,
-    GraduationCap,
-    Users,
-    Briefcase,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Users,
+  Briefcase,
 } from "lucide-react";
 import { authService } from "@/app/utils/auth-service";
 import { Role } from "@/app/utils/types";
 
 export default function RegisterPage() {
-    const router = useRouter();
+  const router = useRouter();
 
-    const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        userType: "", // "mentor", "student", "hr"
-        email: "",
-        password: "",
-        confirmPassword: "",
-    });
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    userType: "", // "mentor", "student", "hr"
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-        // Сбрасываем ошибку при изменении полей
-        if (error) setError(null);
-    };
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Сбрасываем ошибку при изменении полей
+    if (error) setError(null);
+  };
 
-    // Преобразование userType в Role
-    const getUserRole = (type: string): Role => {
-        switch (type) {
-            case "mentor":
-                return Role.MENTOR;
-            case "student":
-                return Role.STUDENT;
-            case "hr":
-                return Role.HR;
-            default:
-                throw new Error("Неверный тип пользователя");
-        }
-    };
+  // Преобразование userType в Role
+  const getUserRole = (type: string): Role => {
+    switch (type) {
+      case "mentor":
+        return Role.MENTOR;
+      case "student":
+        return Role.STUDENT;
+      case "hr":
+        return Role.HR;
+      default:
+        throw new Error("Неверный тип пользователя");
+    }
+  };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-        // Валидация паролей
-        if (formData.password !== formData.confirmPassword) {
-            setError("Пароли не совпадают");
-            return;
-        }
+    // Валидация паролей
+    if (formData.password !== formData.confirmPassword) {
+      setError("Пароли не совпадают");
+      return;
+    }
 
-        // Минимальная длина пароля (по желанию)
-        if (formData.password.length < 6) {
-            setError("Пароль должен содержать не менее 6 символов");
-            return;
-        }
+    // Минимальная длина пароля
+    if (formData.password.length < 6) {
+      setError("Пароль должен содержать не менее 6 символов");
+      return;
+    }
 
-        // Проверка выбора роли
-        if (!formData.userType) {
-            setError("Выберите тип пользователя");
-            return;
-        }
+    // Проверка выбора роли
+    if (!formData.userType) {
+      setError("Выберите тип пользователя");
+      return;
+    }
 
-        setLoading(true);
-        setError(null);
+    setLoading(true);
+    setError(null);
 
-        try {
-            // Подготовка данных для запроса
-            const signUpData = {
-                username: formData.email, // email используется как username
-                password: formData.password,
-                name: formData.firstName,
-                lastName: formData.lastName,
-                role: getUserRole(formData.userType),
-            };
-            await authService.signup(signUpData);
+    try {
+      // Подготовка данных для запроса
+      const signUpData = {
+        username: formData.email, // email используется как username
+        password: formData.password,
+        name: formData.firstName,
+        lastName: formData.lastName,
+        role: getUserRole(formData.userType),
+      };
 
-            // Успешная регистрация — перенаправляем на страницу входа
-            router.push("/login");
-        } catch (err: any) {
-            // Обработка ошибок от сервера
-            if (err.response?.data?.message) {
-                setError(err.response.data.message);
-            } else if (err.message) {
-                setError(err.message);
-            } else {
-                setError("Ошибка регистрации. Попробуйте позже.");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+      // Запрашиваем регистрацию
+      await authService.signup(signUpData);
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-custom-bg-main p-4">
-            <div className="w-full max-w-md">
-                <div className="bg-custom-bg-secondary rounded-3xl shadow-xl p-4 sm:p-8">
-                    <h1 className="text-2xl font-bold text-custom-main text-center mb-6">
-                        Регистрация
-                    </h1>
+      // Сразу же выполняем автоматический вход по свежим данным
+      await authService.login({
+        username: formData.email,
+        password: formData.password,
+      });
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Имя */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-custom-main">Имя</span>
-                            </label>
-                            <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
-                                <User size={18} className="text-custom-main sm:size-5" />
-                                <input
-                                    type="text"
-                                    name="firstName"
-                                    value={formData.firstName}
-                                    onChange={handleChange}
-                                    placeholder="Введите имя"
-                                    className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
-                                    required
-                                />
-                            </div>
-                        </div>
+      // Успешная регистрация и вход — перенаправляем прямо в профиль
+      router.push("/profile");
+    } catch (err: any) {
+      // Обработка ошибок от сервера
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Ошибка регистрации. Попробуйте позже.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                        {/* Фамилия */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-custom-main">Фамилия</span>
-                            </label>
-                            <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
-                                <User size={18} className="text-custom-main sm:size-5" />
-                                <input
-                                    type="text"
-                                    name="lastName"
-                                    value={formData.lastName}
-                                    onChange={handleChange}
-                                    placeholder="Введите фамилию"
-                                    className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
-                                    required
-                                />
-                            </div>
-                        </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-custom-bg-main p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-custom-bg-secondary rounded-3xl shadow-xl p-4 sm:p-8">
+          <h1 className="text-2xl font-bold text-custom-main text-center mb-6">
+            Регистрация
+          </h1>
 
-                        {/* Тип пользователя */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-custom-main">Тип пользователя</span>
-                            </label>
-                            <div className="flex flex-wrap gap-4 gap-y-2">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="userType"
-                                        value="mentor"
-                                        checked={formData.userType === "mentor"}
-                                        onChange={handleChange}
-                                        className="radio radio-primary"
-                                        required
-                                    />
-                                    <Users size={18} className="text-custom-main sm:size-5" />
-                                    <span className="text-custom-main">Ментор</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="userType"
-                                        value="student"
-                                        checked={formData.userType === "student"}
-                                        onChange={handleChange}
-                                        className="radio radio-primary"
-                                        required
-                                    />
-                                    <GraduationCap size={18} className="text-custom-main sm:size-5" />
-                                    <span className="text-custom-main">Студент</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="userType"
-                                        value="hr"
-                                        checked={formData.userType === "hr"}
-                                        onChange={handleChange}
-                                        className="radio radio-primary"
-                                        required
-                                    />
-                                    <Briefcase size={18} className="text-custom-main sm:size-5" />
-                                    <span className="text-custom-main">HR</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Email */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-custom-main">Email</span>
-                            </label>
-                            <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
-                                <Mail size={18} className="text-custom-main sm:size-5" />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    placeholder="example@mail.com"
-                                    className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Пароль */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-custom-main">Пароль</span>
-                            </label>
-                            <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
-                                <Lock size={18} className="text-custom-main sm:size-5" />
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    placeholder="********"
-                                    className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="text-custom-main hover:text-primary transition"
-                                >
-                                    {showPassword ? <EyeOff size={18} className="sm:size-5" /> : <Eye size={18} className="sm:size-5" />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Подтверждение пароля */}
-                        <div className="form-control">
-                            <label className="label">
-                                <span className="label-text text-custom-main">Пароль ещё раз</span>
-                            </label>
-                            <div className="flex items-center gap-2 input input-bordered">
-                                <Lock size={18} className="text-custom-main sm:size-5" />
-                                <input
-                                    type={showConfirmPassword ? "text" : "password"}
-                                    name="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    placeholder="********"
-                                    className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="text-custom-main hover:text-primary transition"
-                                >
-                                    {showConfirmPassword ? <EyeOff size={18} className="sm:size-5" /> : <Eye size={18} className="sm:size-5" />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Отображение ошибки */}
-                        {error && (
-                            <div className="alert alert-error text-sm p-2">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Кнопки */}
-                        <div className="flex flex-col sm:flex-row pt-4 gap-2 sm:gap-0">
-                            <button
-                                type="submit"
-                                className={`btn btn-primary w-full sm:w-1/2 rounded-button sm:rounded-r-none ${loading ? "loading" : ""}`}
-                                disabled={loading}
-                            >
-                                {loading ? "Регистрация..." : "Зарегистрироваться"}
-                            </button>
-                            <Link
-                                href="/login"
-                                className="btn btn-secondary w-full sm:w-1/2 rounded-button sm:rounded-l-none"
-                            >
-                                Уже есть аккаунт? Войти
-                            </Link>
-                        </div>
-                    </form>
-
-                    <div className="mt-6 text-center text-sm text-custom-secondary">
-                        Нажимая «Зарегистрироваться», вы принимаете условия пользовательского соглашения
-                    </div>
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Имя */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-custom-main">Имя</span>
+              </label>
+              <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
+                <User size={18} className="text-custom-main sm:size-5" />
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="Введите имя"
+                  className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
+                  required
+                />
+              </div>
             </div>
+
+            {/* Фамилия */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-custom-main">Фамилия</span>
+              </label>
+              <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
+                <User size={18} className="text-custom-main sm:size-5" />
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Введите фамилию"
+                  className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Тип пользователя */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-custom-main">
+                  Тип пользователя
+                </span>
+              </label>
+              <div className="flex flex-wrap gap-4 gap-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="mentor"
+                    checked={formData.userType === "mentor"}
+                    onChange={handleChange}
+                    className="radio radio-primary"
+                    required
+                  />
+                  <Users size={18} className="text-custom-main sm:size-5" />
+                  <span className="text-custom-main">Ментор</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="student"
+                    checked={formData.userType === "student"}
+                    onChange={handleChange}
+                    className="radio radio-primary"
+                    required
+                  />
+                  <GraduationCap
+                    size={18}
+                    className="text-custom-main sm:size-5"
+                  />
+                  <span className="text-custom-main">Студент</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="hr"
+                    checked={formData.userType === "hr"}
+                    onChange={handleChange}
+                    className="radio radio-primary"
+                    required
+                  />
+                  <Briefcase size={18} className="text-custom-main sm:size-5" />
+                  <span className="text-custom-main">HR</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-custom-main">Email</span>
+              </label>
+              <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
+                <Mail size={18} className="text-custom-main sm:size-5" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="example@mail.com"
+                  className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Пароль */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-custom-main">Пароль</span>
+              </label>
+              <div className="flex items-center gap-2 input input-bordered border-custom-secondary">
+                <Lock size={18} className="text-custom-main sm:size-5" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="********"
+                  className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-custom-main hover:text-primary transition"
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} className="sm:size-5" />
+                  ) : (
+                    <Eye size={18} className="sm:size-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Подтверждение пароля */}
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text text-custom-main">
+                  Пароль ещё раз
+                </span>
+              </label>
+              <div className="flex items-center gap-2 input input-bordered">
+                <Lock size={18} className="text-custom-main sm:size-5" />
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="********"
+                  className="w-full outline-none bg-transparent text-custom-main placeholder-custom-placeholder"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="text-custom-main hover:text-primary transition"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff size={18} className="sm:size-5" />
+                  ) : (
+                    <Eye size={18} className="sm:size-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Отображение ошибки */}
+            {error && (
+              <div className="alert alert-error text-sm p-2">{error}</div>
+            )}
+
+            {/* Кнопки */}
+            <div className="flex flex-col sm:flex-row pt-4 gap-2 sm:gap-0">
+              <button
+                type="submit"
+                className={`btn btn-primary w-full sm:w-1/2 rounded-button sm:rounded-r-none ${loading ? "loading" : ""}`}
+                disabled={loading}
+              >
+                {loading ? "Регистрация..." : "Зарегистрироваться"}
+              </button>
+              <Link
+                href="/login"
+                className="btn btn-secondary w-full sm:w-1/2 rounded-button sm:rounded-l-none"
+              >
+                Уже есть аккаунт? Войти
+              </Link>
+            </div>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-custom-secondary">
+            Нажимая «Зарегистрироваться», вы принимаете условия
+            пользовательского соглашения
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
+}
+
+
+============================================================
+
+
+File: ./frontend/app/globals.css
+@import "tailwindcss";
+@plugin "daisyui";
+
+:root {
+  --background: hsla(242, 6%, 95%, 1);
+  --background-secondary: hsla(242, 6%, 92%, 0.7);
+  --secondary-color: hsla(182, 5%, 70%, 1);
+  --accent-color: hsla(216, 80%, 45%, 1);
+  --text-color: hsla(0, 0%, 15%, 1);
+  --placeholder-text-color: gray;
+
+  /* Для daisyUI */
+  --color-primary: var(--accent-color);
+  --color-secondary: var(--secondary-color);
+  --color-base-100: var(--background);
+  --color-base-content: var(--text-color);
+}
+
+:root.dark {
+  --background: hsla(242, 8%, 18%, 1);
+  --background-secondary: hsla(242, 10%, 20%, 0.5);
+  --secondary-color: hsla(182, 5%, 34%, 1);
+  --accent-color: hsla(216, 80%, 63%, 1);
+  --text-color: hsla(0, 0%, 95%, 1);
+  --placeholder-text-color: lightgray;
+}
+
+@theme inline {
+  --color-custom-bg-main: var(--background);
+  --color-custom-bg-secondary: var(--background-secondary);
+  --color-custom-secondary: var(--secondary-color);
+  --color-custom-main: var(--text-color);
+  --color-custom-accent: var(--accent-color);
+  --color-custom-placeholder: var(--placeholder-text-color);
+
+  --radius-button: 2rem;
+  --radius-search: 4rem;
+  --radius-card: 3rem;
+  
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+@plugin "daisyui/theme" {
+  name: "mytheme";
+  default: true;
+  /* prefersdark: true; */
+  
+  --primary: var(--accent-color);
+  --secondary: var(--secondary-color);
+  --base-100: var(--background);
+  --base-content: var(--text-color);
+  
+  --btn-color: var(--text-color);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-color);
+  font-family: var(--font-sans);
 }
 
 ============================================================
@@ -5239,6 +3446,14 @@ export const RootNode: React.FC<RootNodeProps> = ({ node, skillPoints, isSelecte
 ============================================================
 
 
+File: ./frontend/app/profile/_tree/components/edges.module.css
+.stroke-dasharray-4 {
+    stroke-dasharray: 4;
+}
+
+============================================================
+
+
 File: ./frontend/app/profile/_tree/components/SkillNode.tsx
 import React from 'react';
 import { SkillNode } from '../skill';
@@ -6642,6 +4857,625 @@ const LeaderboardPage = () => {
 };
 
 export default LeaderboardPage;
+
+
+============================================================
+
+
+File: ./web presentation/style.css
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Fira+Code:wght@400;600&display=swap");
+
+:root {
+  /* Цветовая палитра */
+  --bg-color: #0d1117;
+  --bg-gradient: radial-gradient(
+    circle at 50% 0%,
+    rgba(88, 166, 255, 0.08) 0%,
+    transparent 60%
+  );
+  --card-bg: #161b22;
+  --border-color: #30363d;
+
+  /* Текст */
+  --text-main: #c9d1d9;
+  --text-muted: #8b949e;
+
+  /* Акценты */
+  --accent-blue: #58a6ff;
+  --accent-yellow: #e3b341;
+  --accent-green: #3fb950;
+  --accent-purple: #bc8cff;
+
+  /* Технологии (для архитектуры) */
+  --color-docker: #2496ed;
+  --color-nginx: #009639;
+  --color-nextjs: #ffffff;
+  --color-spring: #6db33f;
+  --color-mariadb: #c08b5c;
+
+  --glow: rgba(88, 166, 255, 0.15);
+}
+
+/* Базовые стили */
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  background-image: var(--bg-gradient);
+  color: var(--text-main);
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Кастомный скроллбар для длинных слайдов */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Контейнер презентации */
+.presentation-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.slide {
+  width: 100%;
+  max-width: 1200px;
+  height: 85vh;
+  max-height: 750px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide-content {
+  flex: 1;
+  padding: 40px 60px;
+  overflow-y: auto; /* Позволяет скроллить длинный контент (CJM, Roadmap) */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Типографика */
+h1 {
+  color: #fff;
+  font-size: 2.4rem;
+  margin: 0 0 30px 0;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+.center-title {
+  text-align: center;
+  border-bottom: none;
+}
+h2 {
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 1.4;
+  margin: 0 0 20px 0;
+  font-weight: 600;
+}
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: #fff;
+}
+p {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 15px 0;
+}
+.accent {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+.accent-gold {
+  color: var(--accent-yellow);
+}
+.accent-green {
+  color: var(--accent-green);
+}
+
+/* Списки */
+ul {
+  padding: 0;
+  margin: 0 0 20px 0;
+  list-style: none;
+}
+li {
+  position: relative;
+  padding-left: 25px;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+li::before {
+  content: "▹";
+  position: absolute;
+  left: 0;
+  color: var(--accent-blue);
+  font-weight: bold;
+}
+
+/* Сетки и Карточки */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 10px;
+}
+.info-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 25px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+.info-card:hover {
+  border-color: var(--accent-blue);
+  background: rgba(88, 166, 255, 0.05);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Навигация (подвал слайда) */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 60px;
+  background: var(--bg-color);
+  border-top: 1px solid var(--border-color);
+}
+.nav-center {
+  justify-content: center;
+}
+.nav-btn {
+  text-decoration: none;
+  color: var(--accent-blue);
+  font-family: "Fira Code", monospace;
+  font-weight: bold;
+  padding: 10px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  transition: all 0.3s;
+}
+.nav-btn:hover {
+  background: var(--accent-blue);
+  color: var(--bg-color);
+  box-shadow: 0 0 15px var(--glow);
+  transform: scale(1.05);
+}
+
+/* =========================================
+   СПЕЦИФИЧНЫЕ КОМПОНЕНТЫ ДЛЯ СЛАЙДОВ
+========================================= */
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+/* UI Showcase (Слайды 9) */
+.ui-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+}
+.ui-image-container {
+  width: 100%;
+  height: 380px;
+  display: flex;
+  justify-content: center;
+}
+.ui-image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+.ui-features {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+.ui-feature-card {
+  flex: 1;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  border-radius: 12px;
+}
+
+/* Roadmap (Слайд 8) */
+.roadmap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+.roadmap-card {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 25px;
+  transition: transform 0.3s;
+}
+.roadmap-card:hover {
+  transform: translateY(-8px);
+}
+.roadmap-card.active {
+  border-color: var(--accent-yellow);
+  box-shadow: 0 0 20px rgba(227, 179, 65, 0.15);
+}
+.roadmap-header {
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+.roadmap-header .version {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+}
+.roadmap-header .date {
+  color: var(--accent-blue);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+.roadmap-card.active .date {
+  color: var(--accent-yellow);
+}
+
+/* Теги */
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: "Fira Code", monospace;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  margin-top: 5px;
+}
+.tag-full {
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+.tag-blue {
+  background: rgba(88, 166, 255, 0.1);
+  color: var(--accent-blue);
+  border-color: rgba(88, 166, 255, 0.3);
+}
+.tag-green {
+  background: rgba(63, 185, 80, 0.1);
+  color: var(--accent-green);
+  border-color: rgba(63, 185, 80, 0.3);
+}
+.tag-gold {
+  background: rgba(227, 179, 65, 0.1);
+  color: var(--accent-yellow);
+  border-color: rgba(227, 179, 65, 0.3);
+}
+
+/* Timeline CJM (Слайд 7) */
+.timeline {
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+.timeline::after {
+  content: "";
+  position: absolute;
+  width: 4px;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  margin-left: -2px;
+  background: linear-gradient(
+    to bottom,
+    var(--accent-blue),
+    var(--accent-purple),
+    var(--accent-yellow)
+  );
+  border-radius: 2px;
+}
+.timeline-item {
+  padding: 10px 40px;
+  position: relative;
+  width: 50%;
+  box-sizing: border-box;
+  margin-bottom: 30px;
+}
+.timeline-item.left {
+  left: 0;
+}
+.timeline-item.right {
+  left: 50%;
+}
+.timeline-item::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  right: -12px;
+  background: var(--bg-color);
+  border: 4px solid var(--accent-yellow);
+  top: 25px;
+  border-radius: 50%;
+  z-index: 1;
+}
+.timeline-item.right::after {
+  left: -12px;
+}
+.content-card {
+  padding: 20px;
+  background: var(--bg-color);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s;
+}
+.content-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent-blue);
+}
+.content-card h3 {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+.detail-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+/* Архитектура (Слайд 10) */
+.arch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 20px;
+}
+.docker-box {
+  border: 2px dashed var(--color-docker);
+  border-radius: 16px;
+  padding: 40px 30px 30px;
+  position: relative;
+  background: rgba(13, 17, 23, 0.5);
+  text-align: center;
+}
+.docker-label {
+  position: absolute;
+  top: -14px;
+  left: 30px;
+  background: var(--bg-color);
+  color: var(--color-docker);
+  padding: 0 15px;
+  border: 1px solid var(--color-docker);
+  border-radius: 20px;
+  font-weight: bold;
+}
+.arch-node {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s;
+}
+.arch-node:hover {
+  transform: translateY(-5px);
+}
+.arch-node.nginx {
+  border-top: 4px solid var(--color-nginx);
+}
+.arch-node.next {
+  border-top: 4px solid var(--color-nextjs);
+  height: 100%;
+  box-sizing: border-box;
+}
+.arch-node.spring {
+  border-top: 4px solid var(--color-spring);
+}
+.arch-node.db {
+  border-top: 4px solid var(--color-mariadb);
+  margin-top: 20px;
+}
+.arch-arrow {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 24px;
+  animation: bounce 2s infinite;
+  margin: 10px 0;
+}
+
+/* План разработки (Слайд 11) */
+.time-block {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 25px;
+  overflow: hidden;
+}
+.time-header {
+  background: rgba(48, 54, 61, 0.3);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tasks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+.task-col {
+  padding: 20px;
+  border-right: 1px solid var(--border-color);
+}
+.task-col:last-child {
+  border-right: none;
+}
+.role-title {
+  font-weight: bold;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.1rem;
+}
+
+/* Карусель (Слайд 6) */
+.carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.carousel-container {
+  width: 100%;
+  max-width: 800px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+}
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.carousel-slide {
+  min-width: 100%;
+  padding: 40px;
+  box-sizing: border-box;
+}
+.box-number {
+  background: var(--card-bg);
+  color: var(--accent-blue);
+  border: 1px solid var(--accent-blue);
+  width: 35px;
+  height: 35px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-family: "Fira Code";
+  margin-right: 10px;
+}
+.carousel-button {
+  position: absolute;
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.carousel-button:hover {
+  background: var(--accent-blue);
+  color: #000;
+  border-color: var(--accent-blue);
+}
+.carousel-button.prev {
+  left: 50px;
+}
+.carousel-button.next {
+  right: 50px;
+}
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.dot {
+  width: 10px;
+  height: 10px;
+  background: var(--border-color);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.dot.active {
+  background: var(--accent-blue);
+  transform: scale(1.3);
+  box-shadow: 0 0 10px var(--glow);
+}
 
 
 ============================================================

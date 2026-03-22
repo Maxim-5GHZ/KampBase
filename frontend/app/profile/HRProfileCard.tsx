@@ -24,27 +24,26 @@ export default function HRProfileCard() {
   };
 
   return (
-    <div className="flex flex-col justify-between items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8 lg:h-[90vh]">
-      {/* Шапка */}
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8 min-h-[90vh]">
       <div className="mt-8 md:mt-16">
         <div className="flex justify-center mb-4">
           <User size={120} className="text-custom-accent" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
           {name} {lastName}
         </h2>
-
         <p className="text-center text-custom-secondary mb-4">HR</p>
       </div>
-      {/* Кнопка выхода */}
-      <button
-        onClick={handleLogout}
-        className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
+
+      <div className="mt-auto w-full pb-4 flex flex-col items-center">
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary bg-transparent w-3/4 md:w-1/2 rounded-button flex items-center justify-center gap-2 text-custom-main"
+        >
+          <LogOut size={18} />
+          Выйти
+        </button>
+      </div>
     </div>
   );
 }

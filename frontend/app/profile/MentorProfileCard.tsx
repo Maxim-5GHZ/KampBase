@@ -9,18 +9,12 @@ import {
   LogOut,
   Plus,
   X,
-  BookOpen,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/utils/auth-service";
 import { taskService } from "@/app/utils/task-service";
-import {
-  ArticleRequest,
-  ArticleFormat,
-  Article,
-} from "@/app/utils/types";
+import { ArticleRequest, ArticleFormat, Article } from "@/app/utils/types";
 import { articleService } from "@/app/utils/article-service";
-import MyArticles from "./MyArticles";
 
 type TaskStat = {
   id: string;
@@ -28,7 +22,6 @@ type TaskStat = {
   completionPercent: number;
   participatingStudents: number;
 };
-
 type MentorData = {
   firstName: string;
   lastName: string;
@@ -41,9 +34,6 @@ export default function MentorProfileCard() {
   const router = useRouter();
   const [mentorData, setMentorData] = useState<MentorData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [articles, setArticles] = useState<Article[]>([]);
-
-  // ... твои существующие стейты для заданий ...
   const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   const [articleFormData, setArticleFormData] = useState<
     Omit<ArticleRequest, "link">
@@ -53,46 +43,25 @@ export default function MentorProfileCard() {
     format: ArticleFormat.MD,
     previewPhotoLink: "",
   });
-  const [selectedArticleFile, setSelectedArticleFile] =
-    useState<File | null>(null);
-  const [isSubmittingArticle, setIsSubmittingArticle] = useState(false);
-
-  const fetchArticles = async () => {
-    try {
-      const user = authService.getCurrentUser();
-      if (!user) return;
-      const data = await articleService.getAll();
-      const myArticles = data.filter((article) => article.authorId === user.id);
-      setArticles(myArticles);
-    } catch (error) {
-      console.error("Ошибка загрузки статей:", error);
-    }
-  };
+  const [selectedArticleFile, setSelectedArticleFile] = useState<File | null>(
+    null,
+  );
 
   useEffect(() => {
     const loadData = async () => {
       const user = authService.getCurrentUser();
-      if (!user) {
-        router.push("/login");
-        return;
-      }
+      if (!user) return router.push("/login");
 
       try {
-        // Забираем все таски
         const allTasks = await taskService.getAllTasks();
-        // Фильтруем только те, которые создал этот ментор
         const myTasks = allTasks.filter((t) => t.author.userId === user.id);
-
         let totalUniqueStudents = new Set<number>();
         const tasksStats: TaskStat[] = [];
 
-        // Подсчитываем статистику для каждой таски
         for (const task of myTasks) {
           try {
             const solutions = await taskService.getTaskSolutions(task.id);
-
             solutions.forEach((s) => totalUniqueStudents.add(s.user.userId));
-
             const participatingStudents = new Set(
               solutions.map((s) => s.user.userId),
             ).size;
@@ -103,7 +72,6 @@ export default function MentorProfileCard() {
               solutions.length > 0
                 ? Math.round((approved / solutions.length) * 100)
                 : 0;
-
             tasksStats.push({
               id: String(task.id),
               title: task.title,
@@ -111,7 +79,6 @@ export default function MentorProfileCard() {
               participatingStudents,
             });
           } catch (e) {
-            // Если нет решений, просто добавляем пустую статистику
             tasksStats.push({
               id: String(task.id),
               title: task.title,
@@ -120,13 +87,12 @@ export default function MentorProfileCard() {
             });
           }
         }
-
         setMentorData({
           firstName: user.name || "Ментор",
           lastName: user.lastName || "",
           tasksCount: myTasks.length,
           studentsCount: totalUniqueStudents.size,
-          tasks: tasksStats.slice(0, 3), // Показываем только 3 последние в профиле
+          tasks: tasksStats.slice(0, 3),
         });
       } catch (error) {
         console.error("Ошибка загрузки профиля ментора:", error);
@@ -134,9 +100,7 @@ export default function MentorProfileCard() {
         setLoading(false);
       }
     };
-
     loadData();
-    fetchArticles();
   }, [router]);
 
   const handleLogout = () => {
@@ -157,7 +121,7 @@ export default function MentorProfileCard() {
         previewPhotoLink: "",
       });
       setSelectedArticleFile(null);
-      fetchArticles();
+      window.location.reload();
     } catch (error) {
       alert("Ошибка при загрузке статьи");
     }
@@ -172,12 +136,11 @@ export default function MentorProfileCard() {
   }
 
   return (
-    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-8">
+    <div className="flex flex-col items-center p-4 rounded-4xl bg-custom-bg-secondary gap-y-4 md:gap-y-6 min-h-[90vh]">
       <div className="mt-4">
         <div className="flex justify-center mb-4">
           <User size={120} className="text-custom-accent" />
         </div>
-
         <h2 className="text-2xl font-bold text-center text-custom-main mb-1">
           {mentorData.firstName} {mentorData.lastName}
         </h2>
@@ -203,7 +166,6 @@ export default function MentorProfileCard() {
         <h3 className="text-xl font-semibold text-custom-main mb-2">
           Сводка заданий
         </h3>
-
         {mentorData.tasks.length > 0 ? (
           mentorData.tasks.map((task) => (
             <div
@@ -229,22 +191,27 @@ export default function MentorProfileCard() {
             Вы еще не создали заданий.
           </p>
         )}
-
         <button
           onClick={() => router.push("/tasks")}
           className="self-center btn btn-primary w-full md:w-3/4 rounded-button mt-2"
         >
-          <ListTodo />
-          Все задания
+          <ListTodo /> Все задания
         </button>
       </div>
 
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4">
+      <div className="mt-auto w-full flex flex-col items-center gap-3 pb-4">
         <button
           onClick={() => setIsArticleModalOpen(true)}
-          className="btn btn-secondary rounded-full shadow-2xl flex items-center gap-2 px-6"
+          className="btn btn-secondary w-full md:w-3/4 rounded-button flex items-center justify-center gap-2"
         >
-          <Plus size={20} /> Написать статью
+          <Plus size={18} /> Написать статью
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="btn btn-secondary bg-transparent w-full md:w-3/4 rounded-button flex items-center justify-center gap-2 text-custom-main"
+        >
+          <LogOut size={18} /> Выйти
         </button>
       </div>
 
@@ -313,14 +280,6 @@ export default function MentorProfileCard() {
           </div>
         </div>
       )}
-
-      <button
-        onClick={handleLogout}
-        className="btn btn-secondary bg-transparent w-full md:w-3/4 rounded-button flex items-center justify-center gap-2 mb-4 text-custom-main"
-      >
-        <LogOut size={18} />
-        Выйти
-      </button>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { LeaderboardEntry as ApiLeaderboardEntry } from "@/app/utils/types";
 
 type DisplayEntry = {
   userId: number;
+  username: string;
   rank: number;
   name: string;
   level: number;
@@ -55,7 +56,6 @@ const LeaderboardPage = () => {
     setFilterCategories(newCategories);
   };
 
-  // Привязываем ВУЗ жестко к ID, чтобы при ререндере он не менялся
   const getUniversityForUser = (id: number) => {
     if (id % 3 === 0) return "МГУ";
     if (id % 5 === 0) return "НИУ ВШЭ";
@@ -65,10 +65,11 @@ const LeaderboardPage = () => {
   const displayEntries: DisplayEntry[] = entries
     .map((entry, idx) => ({
       userId: entry.userId,
+      username: entry.username || "no-email@example.com",
       rank: idx + 1,
       name: `${entry.name} ${entry.lastName}`,
       level: entry.totalRate,
-      completedTasks: Math.floor(entry.totalRate / 300) + 1, // Генерация количества задач на основе рейтинга
+      completedTasks: Math.floor(entry.totalRate / 300) + 1,
       university: getUniversityForUser(entry.userId),
     }))
     .filter((entry) => {
@@ -85,7 +86,7 @@ const LeaderboardPage = () => {
     const isHr = currentUser?.roles.includes("ROLE_HR") ?? false;
 
     if (!isHr) {
-      alert("Только HR могут управлять избранным. Зайдите под аккаунтом HR.");
+      alert("Только HR могут управлять избранным.");
       return;
     }
 
@@ -119,16 +120,8 @@ const LeaderboardPage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="mx-4 sm:mx-8 lg:mx-16 flex justify-center items-center min-h-screen">
-        <div className="text-center text-red-500">{error}</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8">
+    <div className="mx-4 sm:mx-8 lg:mx-16 flex flex-col lg:flex-row min-h-screen gap-6 pt-8 pb-12">
       <div className="w-full lg:w-1/5 mb-4 lg:mb-0">
         <FilterPanel
           categories={filterCategories}
@@ -137,37 +130,32 @@ const LeaderboardPage = () => {
       </div>
 
       <div className="flex-1">
-        <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg">
-          <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium">
+        <div className="bg-custom-bg-secondary rounded-2xl p-4 shadow-lg overflow-x-auto">
+          <div className="flex flex-wrap items-center gap-3 p-3 border-b border-custom-secondary/30 text-custom-secondary text-sm font-medium min-w-[700px]">
             <div className="w-8 sm:w-10 text-center">№</div>
             <div className="flex-1 min-w-35">Студент</div>
             <div className="w-20 text-center">Очки</div>
             <div className="w-24 text-center">Решено</div>
             <div className="flex-1 min-w-30">ВУЗ</div>
-            <div className="w-24 text-center">Действие</div>
+            <div className="w-36 text-center">Действие</div>
           </div>
 
-          {displayEntries.length > 0 ? (
-            <div className="divide-y divide-custom-secondary/10">
-              {displayEntries.map((entry) => (
-                <div key={entry.userId} className="my-4">
-                  <LeaderboardRow
-                    rank={entry.rank}
-                    name={entry.name}
-                    level={entry.level}
-                    completedTasks={entry.completedTasks}
-                    university={entry.university}
-                    isFavorite={favorites.has(entry.userId)}
-                    onToggleFavorite={() => handleToggleFavorite(entry.userId)}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-custom-secondary py-8">
-              Нет студентов, соответствующих фильтрам.
-            </div>
-          )}
+          <div className="divide-y divide-custom-secondary/10 min-w-[700px]">
+            {displayEntries.map((entry) => (
+              <div key={entry.userId} className="my-4">
+                <LeaderboardRow
+                  rank={entry.rank}
+                  name={entry.name}
+                  level={entry.level}
+                  completedTasks={entry.completedTasks}
+                  university={entry.university}
+                  isFavorite={favorites.has(entry.userId)}
+                  onToggleFavorite={() => handleToggleFavorite(entry.userId)}
+                  email={entry.username}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
