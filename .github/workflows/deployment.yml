@@ -1,0 +1,74 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: ["deploy"]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/frontend:latest
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/backend:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Copy docker compose to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "nginx/nginx.conf,docker-compose.yml,nginx/static" 
+          target: "/var/www/KampBase/"
+         
+      - name: Executing remote ssh commands to deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}     
+          username: ${{ secrets.SERVER_USER }} 
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  
+          script: |
+            mkdir -p /var/www/KampBase/nginx/ssl/
+            printf "%s" "${{ secrets.ENV }}" > /var/www/KampBase/.env
+            
+            printf "%s" "${{ secrets.SSL_CERT }}" > /var/www/KampBase/nginx/ssl/fullchain.pem
+            
+            printf "%s" "${{ secrets.SSL_KEY }}" > /var/www/KampBase/nginx/ssl/privkey.pem
+    
+            cd /var/www/KampBase
+            
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+            
+            docker compose pull
+
+            docker compose up -d
+            
+            docker image prune -f
