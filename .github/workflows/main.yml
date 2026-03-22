@@ -47,7 +47,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "nginx/nginx.conf,docker-compose.yml,nginx/static" 
-          target: "/var/www/privatehack/"
+          target: "/var/www/KampBase/"
          
       - name: Executing remote ssh commands to deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -56,12 +56,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }} 
           key: ${{ secrets.SSH_PRIVATE_KEY }}  
           script: |
-            mkdir -p /var/www/privatehack/nginx/ssl/
-            printf "%s" "${{ secrets.ENV }}" > /var/www/privatehack/.env
+            mkdir -p /var/www/KampBase/nginx/ssl/
+            printf "%s" "${{ secrets.ENV }}" > /var/www/KampBase/.env
             
-            printf "%s" "${{ secrets.SSL_CERT }}" > /var/www/privatehack/nginx/ssl/fullchain.pem
+            printf "%s" "${{ secrets.SSL_CERT }}" > /var/www/KampBase/nginx/ssl/fullchain.pem
             
-            printf "%s" "${{ secrets.SSL_KEY }}" > /var/www/privatehack/nginx/ssl/privkey.pem
+            printf "%s" "${{ secrets.SSL_KEY }}" > /var/www/KampBase/nginx/ssl/privkey.pem
     
             cd /var/www/privatehack
             
