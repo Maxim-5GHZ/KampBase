@@ -1,87 +1,185 @@
-# KampBase
+# СтудБаза
 
-## Начало работы
+> Gamified IT-платформа, где студенты прокачивают реальные навыки кода и зарабатывают звёзды на AI‑помощника.
 
-1.  **Клонируйте репозиторий:**
-    ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-    │ > крч через 2 часа защита она недолгая ньансы не поймут а косяки с переходами не работающий поисковик даже из того что есть на фронте и в таком духе │
-    │ заметят как и хаотичное рассполажение кнопок и то что студету разрешено писать статью и то что не показывается почта и гитхаб при нажатии на кнопку │
-    │ связатся надо крч сделатьь фулл ревью фронта только фронта времени нема  
-     `bash
-    git clone [ваш-url-репозитория]
-    cd KampBase
-    `
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Java](https://img.shields.io/badge/Java-21-red)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen)](https://spring.io/projects/spring-boot)
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-38bdf8)](https://tailwindcss.com/)
+[![DaisyUI](https://img.shields.io/badge/DaisyUI-4-5a0ef)](https://daisyui.com/)
 
-2.  **Настройте переменные окружения:**
-    Создайте файл `.env` в корне проекта. Этот файл будет использоваться `docker-compose` для установки переменных окружения для сервисов.
-    Пример файла `.env` (или просто скопируйте содержимое ниже):
+---
 
-    ```
-    # Конфигурация MariaDB
-    MARIADB_ROOT_PASSWORD=rootpassword
-    MARIADB_DATABASE=kampbase
-    MARIADB_USER=user
-    MARIADB_PASSWORD=password
+## О проекте
 
-    # Конфигурация источника данных Spring Boot
-    SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/kampbase
-    SPRING_DATASOURCE_USERNAME=user
-    SPRING_DATASOURCE_PASSWORD=password
+**СтудБаза** — это веб-платформа, которая превращает обучение IT в RPG-приключение.  
+Студенты выполняют реальные задачи (Pull Request на GitHub), получают «звёзды опыта», открывают новые ветки дерева навыков и тратят заработанные звёзды на AI‑генерацию отчётов, диаграмм и менторство.
 
-    # URL API для фронтенда (используется во время сборки и для локальной разработки)
-    # Это будет передано как аргумент сборки в Dockerfile фронтенда.
-    # Значение по умолчанию — http://backend:8080 при работе в docker-compose.
-    # Если фронтенд запускается отдельно (без docker compose), вы можете установить его в http://localhost:8080, если бэкенд также работает локально.
-    FRONTEND_API_URL=http://backend:8080
-    ```
+### Ключевые возможности
 
-3.  **Сборка и запуск с Docker Compose:**
+- 🎮 **Геймификация** – дерево навыков, система уровней.
+- 💻 **Реальный код** – задачи проверяются через GitHub Webhooks (автоматическое начисление звёзд).
+- 🤖 **AI‑ассистент за звёзды** – генерация отчётов по ГОСТу, диаграмм, помощь в оформлении.
+- 📚 **Единая Wiki вуза** – знания, накопленные старшекурсниками, не теряются.
+- 🏆 **Leaderboard для HR** – компании получают подтверждённый профиль кандидата (GitHub, звёзды по стекам).
 
-    ```bash
-    docker compose up --build
-    ```
+---
 
-    Эта команда выполнит следующее:
-    - Соберет образы Docker для сервисов `backend` (Spring Boot) и `frontend` (Next.js).
-    - Запустит сервис базы данных `mariadb`.
-    - Запустит сервис `backend`, подключившись к MariaDB.
-    - Запустит сервис `frontend`.
-    - Запустит прокси-сервер `nginx`, который будет маршрутизировать запросы к фронтенду и бэкенду.
+## Скриншоты
 
-4.  **Доступ к приложению:**
-    Как только все сервисы будут запущены, вы сможете получить доступ к приложению через Nginx:
-    - Фронтенд: `http://localhost/`
-    - API бэкенда (пример): `http://localhost/api/hello`
+Интерфейс полностью адаптивен — одинаково удобен на десктопе и мобильных устройствах.
+
+### Десктопная версия (16:9)
+
+| Задачи | Wiki | Профиль |
+|--------|------|---------|
+| ![Tasks PC](web%20presentation/tasks_pc.png) | ![Wiki PC](web%20presentation/wiki_pc.png) | ![Profile PC](web%20presentation/profile_pc.png) |
+
+| Лидеры | Новая задача | Новая статья |
+|--------|--------------|--------------|
+| ![Leaders PC](web%20presentation/leaders_pc.png) | ![New Task PC](web%20presentation/new-task_pc.png) | ![New Article PC](web%20presentation/new-article_pc.png) |
+
+### Мобильная версия
+
+| Регистрация | Профиль | Задачи |
+|-------------|---------|--------|
+| ![Registration Phone](web%20presentation/registration_phone_white.png) | ![Profile Phone](web%20presentation/profile_phone_white.png) | ![Tasks Phone](web%20presentation/tasks_phone.png) |
+
+| Wiki | Лидеры | Новая статья |
+|------|--------|--------------|
+| ![Wiki Phone](web%20presentation/wiki_phone.png) | ![Leaders Phone](web%20presentation/leaders_phone.png) | ![New Article Phone](web%20presentation/new-article_phone.png) |
+
+| Новая задача |
+|--------------|
+| ![New Task Phone](web%20presentation/new-task_phone.png) |
+
+---
+
+## Технологический стек
+
+### Backend
+- **Java 21** + **Spring Boot 3.2** (монолит, готовый к микросервисам)
+- **Axiom JDK** – российский сертифицированный дистрибутив (импортозамещение)
+- **MariaDB** – основная база данных
+- **Spring Data JPA** – работа с БД
+- **GitHub API / Webhooks** – приём PR и начисление звёзд
+
+### Frontend
+- **Next.js 14** (React, TypeScript)
+- **Tailwind CSS** + **DaisyUI** – стилизация и компоненты
+- **Lucide React** – иконки
+- **Axios** – HTTP-клиент для связи с бэкендом
+- Собственная **TS‑библиотека** для общения с API
+
+### Инфраструктура
+- **Docker Compose** – полная контейнеризация
+- **Nginx** – reverse proxy (маршрутизация /api → backend)
+- **MariaDB** – данные сохраняются в томе `maria_db/data`
+- **GitHub Actions** (планируется CI/CD)
+
+---
 
 ## Структура проекта
 
-- `backend/`: Приложение Spring Boot
-- `frontend/`: Приложение Next.js
-- `maria_db/`: Каталог для постоянных данных MariaDB
-- `nginx/`: Конфигурация Nginx
-- `docker-compose.yml`: Конфигурация Docker Compose для всех сервисов
-- `.env`: Переменные окружения для Docker Compose
-- `.gitignore`: Файл игнорирования Git
+```
+.
+├── backend/               # Spring Boot приложение
+│   ├── Dockerfile
+│   ├── pom.xml
+│   └── src/
+├── backendtest/           # Тесты API (Node.js)
+│   ├── api/
+│   ├── test-back.ts
+│   └── package.json
+├── frontend/              # Next.js приложение
+│   ├── app/
+│   ├── public/
+│   ├── dockerfile
+│   ├── next.config.ts
+│   └── package.json
+├── nginx/                 # Конфигурация Nginx
+│   ├── nginx.conf
+│   └── static/
+├── maria_db/              # Персистентные данные MariaDB (игнорируется git)
+│   └── data/
+├── docker-compose.yml
+├── docker-compose.override.yml
+├── .env.example           # (создайте .env по образцу)
+└── README.md
+```
 
-## Заметки по разработке
+---
 
-### Бэкенд (Spring Boot)
+## Запуск проекта (локальная разработка)
 
-- **Версия Java:** 21
-- **Зависимости:** Spring Web, Spring Data JPA, MariaDB JDBC Driver
-- **Подключение к базе данных:** Настроено через переменные окружения (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`).
+### 1. Клонируйте репозиторий
 
-### Фронтенд (Next.js)
+```bash
+git clone https://github.com/Maxim-5GHZ/KampBase.git
+cd KampBase
+```
 
-- (В настоящее время заглушка. Будет реализовано разработчиком.)
-- Ожидается, что запросы к API будут маршрутизироваться через Nginx. Например, `fetch('/api/some-endpoint')`.
+### 2. Настройте переменные окружения
 
-### Nginx
+Создайте файл `.env` в корне проекта (можно скопировать из `.env.example`).  
+Минимальное содержимое:
 
-- Проксирует запросы к `frontend` по умолчанию.
-- Запросы к `/api/` проксируются к сервису `backend`.
+```ini
+# MariaDB
+MARIADB_ROOT_PASSWORD=rootpassword
+MARIADB_DATABASE=studbase
+MARIADB_USER=studuser
+MARIADB_PASSWORD=studpass
 
-### MariaDB
+# Spring Boot
+SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/studbase
+SPRING_DATASOURCE_USERNAME=studuser
+SPRING_DATASOURCE_PASSWORD=studpass
 
-- Данные сохраняются в томе `maria_db/data`.
-- Учетные данные устанавливаются через переменные окружения в файле `.env`.
+# URL API для фронтенда (используется во время сборки)
+FRONTEND_API_URL=http://backend:8080
+```
+
+### 3. Соберите и запустите контейнеры
+
+```bash
+docker compose up --build
+```
+
+После успешного запуска:
+- Фронтенд: [http://localhost/](http://localhost/)
+- Бэкенд API: [http://localhost/api/](http://localhost/api/) (пример)
+- База данных: доступна внутри сети на порту 3306
+
+Для остановки:
+
+```bash
+docker compose down
+```
+
+### 4. Разработка без Docker (опционально)
+
+- **Backend**: запустите `./mvnw spring-boot:run` в папке `backend/`
+- **Frontend**: в папке `frontend/` выполните `npm install && npm run dev`
+- Убедитесь, что в `.env.local` фронтенда указан `NEXT_PUBLIC_API_URL=http://localhost:8080`
+
+---
+
+## Дорожная карта
+
+- [x] **MVP (хакатон)** – авторизация, Wiki, дерево навыков, GitHub webhook, базовая генерация отчётов.
+- [ ] **V2** – P2P‑менторство (студенты покупают консультации за звёзды), расширенная аналитика для HR.
+- [ ] **V3** – Интеграция с вузами (LMS, единый вход), корпоративные квесты от IT‑компаний.
+
+---
+
+## Лицензия
+
+Распространяется под лицензией MIT. Подробнее в файле [LICENSE](LICENSE).
+
+---
+
+> *«Хватит зубрить. Пиши код. Развивай комьюнити.»*
+
+---
